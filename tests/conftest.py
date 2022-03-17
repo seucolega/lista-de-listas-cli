@@ -1,14 +1,13 @@
 import os
-from sqlalchemy_utils import create_database, database_exists, drop_database
 
+import facade
 import pytest as pytest
+import schemas
+from database import Base
 from decouple import config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
-
-import facade
-import schemas
-from database import Base
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
 SQLALCHEMY_DATABASE_URL = config(
     'DATABASE_TEST_URL', f'sqlite:///{os.path.dirname(__file__)}/test.db'
@@ -55,5 +54,21 @@ def db_session():
 @pytest.fixture
 def item_1(db_session):
     item = schemas.ItemCreate(name='Something')
+
+    return facade.create_item(db_session=db_session, item=item)
+
+
+@pytest.fixture
+def done_item_1(db_session):
+    item = schemas.ItemCreate(name='Something', status=schemas.ItemStatus.DONE)
+
+    return facade.create_item(db_session=db_session, item=item)
+
+
+@pytest.fixture
+def undone_item_1(db_session):
+    item = schemas.ItemCreate(
+        name='Something', status=schemas.ItemStatus.UNDONE
+    )
 
     return facade.create_item(db_session=db_session, item=item)
