@@ -12,5 +12,5 @@ lint:
 	@blue . --check
 	@isort . --check $(ISORT_ARGS)
 test:
-	@prospector . --with-tool pep257 --doc-warning
+	@prospector . --with-tool pydocstyle --doc-warning
 	@pytest . -v --cov --cov-report term-missing

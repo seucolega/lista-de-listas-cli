@@ -3,6 +3,7 @@ import os
 import facade
 import pytest as pytest
 import schemas
+from click.testing import CliRunner
 from database import Base
 from decouple import config
 from sqlalchemy import create_engine
@@ -14,6 +15,16 @@ SQLALCHEMY_DATABASE_URL = config(
 )
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
+
+# def get_test_db():
+#     session_local = sessionmaker(bind=engine)
+#     test_db = session_local()
+#
+#     try:
+#         yield test_db
+#     finally:
+#         test_db.close()
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -34,7 +45,7 @@ def create_test_database():
     drop_database(SQLALCHEMY_DATABASE_URL)  # Drop the test database.
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def db_session():
     """Returns a sqlalchemy session, and after the test tears down everything
     properly."""
@@ -55,14 +66,14 @@ def db_session():
 def item_1(db_session):
     item = schemas.ItemCreate(name='Something')
 
-    return facade.create_item(db_session=db_session, item=item)
+    return facade.create_item(item=item)
 
 
 @pytest.fixture
 def done_item_1(db_session):
     item = schemas.ItemCreate(name='Something', status=schemas.ItemStatus.DONE)
 
-    return facade.create_item(db_session=db_session, item=item)
+    return facade.create_item(item=item)
 
 
 @pytest.fixture
@@ -71,4 +82,9 @@ def undone_item_1(db_session):
         name='Something', status=schemas.ItemStatus.UNDONE
     )
 
-    return facade.create_item(db_session=db_session, item=item)
+    return facade.create_item(item=item)
+
+
+@pytest.fixture
+def runner():
+    return CliRunner()
