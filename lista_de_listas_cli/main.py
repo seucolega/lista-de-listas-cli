@@ -1,3 +1,5 @@
+from typing import List, Union
+
 import click
 import facade
 import schemas
@@ -13,10 +15,10 @@ def cli():
     pass
 
 
-@click.command(name='hello')
-@click.argument('name')
-def hello_command(name):
-    click.echo(f'Hello {name}!')
+# @click.command(name='hello')
+# @click.argument('name')
+# def hello_command(name):
+#     click.echo(f'Hello {name}!')
 
 
 @cli.command(name='list')
@@ -43,17 +45,21 @@ def interactive_command():
     start_interactive()
 
 
-def start_interactive(default_choice: int = None):
-    clear_screen()
-
-    choices = [
+def choices_for_interactive_menu() -> List[Union[Choice, Separator]]:
+    return [
         Choice('create_item', name='Create a new item'),
         # Choice('list_all', name='Show all items'),
         Choice('list_actionable', name='Show actionable items'),
         # Choice('list_non_actionable', name='Show non-actionable items'),
-        Separator(line='----'),
+        Separator(line=''),
         Choice(value=None, name='Exit'),
     ]
+
+
+def start_interactive(default_choice: int = None):
+    clear_screen()
+
+    choices = choices_for_interactive_menu()
 
     action = inquirer.select(
         message='Select an action:',
@@ -61,18 +67,18 @@ def start_interactive(default_choice: int = None):
         default=default_choice or choices[0].value,
     ).execute()
 
-    if not action:
-        return
+    if action:
+        return_to_kwargs = {
+            'return_func': start_interactive,
+            'return_choice': action,
+        }
 
-    return_to_kwargs = {
-        'return_func': start_interactive,
-        'return_choice': action,
-    }
-
-    if action == 'create_item':
-        create_item(**return_to_kwargs)
-    elif action == 'list_actionable':
-        show_items(item_list=facade.get_actionable_items(), **return_to_kwargs)
+        if action == 'create_item':
+            create_item(**return_to_kwargs)
+        elif action == 'list_actionable':
+            show_items(
+                item_list=facade.get_actionable_items(), **return_to_kwargs
+            )
 
 
 @return_to
@@ -109,7 +115,7 @@ def show_item_options(item: schemas.Item, **_):
         # Choice('duplicate', name='Duplicate'),
         Choice(schemas.ItemStatus.NOTE, name='Convert to note'),
         # Choice('delete', name='Delete'),
-        Separator(line='------'),
+        Separator(line=''),
         Choice(value=None, name='Return'),
     ]
 
@@ -135,7 +141,7 @@ def show_items(item_list: [schemas.Item], default_choice: int = None, **_):
     for item in item_list:
         choices.append(Choice(item.id, name=item.name))
 
-    choices += [Separator(line='------'), Choice(value=None, name='Return')]
+    choices += [Separator(line=''), Choice(value=None, name='Return')]
 
     action = inquirer.select(
         message='Select one or more items:',
