@@ -88,3 +88,12 @@ def undone_item_1(db_session):
 @pytest.fixture
 def runner():
     return CliRunner()
+
+
+@pytest.fixture
+def tag_1(db_session):
+    return facade.create_tag(
+        schemas.TagCreate(
+            name='Tag name', parent_id=None, multi_children=False
+        )
+    )

@@ -45,3 +45,24 @@ def create_item(item: schemas.ItemCreate) -> schemas.Item:
 def set_item_status(item: schemas.Item, status: schemas.ItemStatus):
     item.status = status
     db_session.commit()
+
+
+def get_tag_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
+    return db_session.query(models.Tag).offset(skip).limit(limit).all()
+
+
+def get_tag(tag_id: int) -> schemas.Tag:
+    return db_session.query(models.Tag).filter_by(id=tag_id).first()
+
+
+def create_tag(tag: schemas.TagCreate) -> schemas.Tag:
+    tag = models.Tag(
+        id=len(get_tag_list()) + 1,
+        **tag.dict(),
+    )
+
+    db_session.add(tag)
+    db_session.commit()
+    db_session.refresh(tag)
+
+    return tag
