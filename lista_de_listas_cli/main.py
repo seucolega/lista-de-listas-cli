@@ -105,14 +105,45 @@ def edit_item(item: schemas.Item, **_):
 
 
 @return_to
+def edit_item_tags(item: schemas.Item, default_choice: int = None, **_):
+    tag_list = facade.get_tag_list()
+
+    if not tag_list:
+        click.echo('There are no tags to display.')
+        return
+
+    choices = []
+    for tag in tag_list:
+        choices.append(Choice(tag.id, name=tag.name))
+
+    choices += [Separator(line=''), Choice(value=None, name='Return')]
+
+    action = inquirer.select(
+        message='Select one or more tags:',
+        choices=choices,
+        default=default_choice or choices[0].value,
+        multiselect=True,
+        transformer=lambda result: get_selected_items_info(result),
+    ).execute()
+
+    if action:
+        for tag_id in action:
+            tag = facade.get_tag(tag_id=tag_id)
+            if tag:
+                item.tags.append(tag)
+
+        db_session.commit()
+
+
+@return_to
 def show_item_options(item: schemas.Item, **_):
     choices = [
         Choice(schemas.ItemStatus.DONE, name='Done'),
+        Choice(schemas.ItemStatus.WONT, name="Won't do"),
         Choice('edit', name='Edit'),
         # Choice('subtask', name='Add subtask'),
-        Choice(schemas.ItemStatus.WONT, name="Won't do"),
         # Choice('move-to', name='Move to'),
-        # Choice('tags', name='Tags'),
+        Choice('tags', name='Tags'),
         # Choice('duplicate', name='Duplicate'),
         Choice(schemas.ItemStatus.NOTE, name='Convert to note'),
         # Choice('delete', name='Delete'),
@@ -130,6 +161,8 @@ def show_item_options(item: schemas.Item, **_):
         facade.set_item_status(item=item, status=action)
     elif action == 'edit':
         edit_item(item=item)
+    elif action == 'tags':
+        edit_item_tags(item=item)
 
 
 @return_to
