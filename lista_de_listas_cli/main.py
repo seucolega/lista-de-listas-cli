@@ -2,8 +2,9 @@ from typing import List, Union
 
 import click
 import facade
+import models
 import schemas
-from database import db_session
+from database import Base, db_session, engine
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
 from InquirerPy.separator import Separator
@@ -162,6 +163,7 @@ def show_items(item_list: [schemas.Item], default_choice: int = None, **_):
 
 
 if __name__ == '__main__':
+    Base.metadata.create_all(bind=engine)
     try:
         cli()
     finally:
