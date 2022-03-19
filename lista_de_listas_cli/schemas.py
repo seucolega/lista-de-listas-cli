@@ -31,7 +31,6 @@ class Item(ItemBase):
 class TagBase(BaseModel):
     name: str
     parent_id: Optional[int]
-    multi_children: bool = False
     children: list = []
 
 
