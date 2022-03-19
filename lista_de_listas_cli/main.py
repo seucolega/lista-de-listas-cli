@@ -47,14 +47,24 @@ def interactive_command():
 
 
 def choices_for_interactive_menu() -> List[Union[Choice, Separator]]:
-    return [
-        Choice('create_item', name='Create a new item'),
-        # Choice('list_all', name='Show all items'),
-        Choice('list_actionable', name='Show actionable items'),
-        # Choice('list_non_actionable', name='Show non-actionable items'),
+    choices = [
+        Choice('create', name='New item'),
+        Choice('inbox', name='Inbox'),
+    ]
+
+    tag_list = facade.get_actionable_tag_list()
+    for tag in tag_list:
+        choices.append(Choice(f'tag.{tag.id}', name=f'Context {tag.name}'))
+
+    choices += [
+        # Choice('all', name='All items'),
+        Choice('actionable', name='Actionable items'),
+        # Choice('non_actionable', name='Non-actionable items'),
         Separator(line=''),
         Choice(value=None, name='Exit'),
     ]
+
+    return choices
 
 
 def start_interactive(default_choice: int = None):
@@ -74,12 +84,24 @@ def start_interactive(default_choice: int = None):
             'return_choice': action,
         }
 
-        if action == 'create_item':
+        if action == 'create':
             create_item(**return_to_kwargs)
-        elif action == 'list_actionable':
+        elif action == 'inbox':
+            show_items(item_list=facade.get_inbox_items(), **return_to_kwargs)
+        elif action == 'actionable':
             show_items(
                 item_list=facade.get_actionable_items(), **return_to_kwargs
             )
+        elif action.startswith('tag.'):
+            tag_id = int(action[4:])
+
+            item_list = (
+                db_session.query(models.Item)
+                .filter(models.Item.tags.any(id=tag_id))
+                .all()
+            )
+
+            show_items(item_list=item_list, **return_to_kwargs)
 
 
 @return_to
@@ -193,6 +215,33 @@ def show_items(item_list: [schemas.Item], default_choice: int = None, **_):
                 show_item_options(item)
         else:
             ...
+
+
+@cli.command(name='init_tags')
+def init_tags_command():
+    init_tags()
+
+
+def init_tags():
+    status_tag = schemas.TagCreate(name='Status')
+    if not facade.get_tag_by_name(status_tag.name):
+        status_tag = facade.create_tag(status_tag)
+
+    sub_tags = ['Next', 'Waiting', 'Schedule', 'Someday']
+    for tag_name in sub_tags:
+        if not facade.get_tag_by_name(tag_name):
+            tag = schemas.TagCreate(name=tag_name, parent_id=status_tag.id)
+            facade.create_tag(tag)
+
+    status_tag = schemas.TagCreate(name='Area')
+    if not facade.get_tag_by_name(status_tag.name):
+        status_tag = facade.create_tag(status_tag)
+
+    sub_tags = ['Personal', 'Work']
+    for tag_name in sub_tags:
+        if not facade.get_tag_by_name(tag_name):
+            tag = schemas.TagCreate(name=tag_name, parent_id=status_tag.id)
+            facade.create_tag(tag)
 
 
 if __name__ == '__main__':

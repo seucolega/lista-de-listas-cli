@@ -1,3 +1,5 @@
+from typing import Any, Union
+
 from database import Base, engine
 from schemas import ItemStatus
 from sqlalchemy import BigInteger, Column, Enum, ForeignKey, String, Table
@@ -20,7 +22,7 @@ class Item(Base):
     name: str = Column(String)
     description: str = Column(String, nullable=True)
     status: Enum = Column(Enum(ItemStatus), default=ItemStatus.UNDONE)
-    tags: list = relationship(
+    tags: Union[list, Any] = relationship(
         'Tag', secondary=item_and_tag, back_populates='items'
     )
 
@@ -44,7 +46,7 @@ class Tag(Base):
     name: str = Column(String)
     parent_id: int = Column(BigInteger, ForeignKey('tag.id'), nullable=True)
     children: list = relationship('Tag')
-    items: list = relationship(
+    items: Union[list, Any] = relationship(
         'Item', secondary=item_and_tag, back_populates='tags'
     )
 
