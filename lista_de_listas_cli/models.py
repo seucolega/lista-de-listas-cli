@@ -45,7 +45,7 @@ class Tag(Base):
     id: int = Column(BigInteger, primary_key=True, index=True)
     name: str = Column(String)
     parent_id: int = Column(BigInteger, ForeignKey('tag.id'), nullable=True)
-    children: list = relationship('Tag')
+    children: Union[list, Any] = relationship('Tag')
     items: Union[list, Any] = relationship(
         'Item', secondary=item_and_tag, back_populates='tags'
     )

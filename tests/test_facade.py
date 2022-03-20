@@ -41,6 +41,18 @@ def test_get_tag_list__empty():
     assert facade.get_tag_list() == []
 
 
+def test_get_list_of_tags_with_items(item_1, tag_1, tag_2):
+    item_1.tags = [tag_1]
+
+    assert facade.get_list_of_tags_with_items() == [tag_1]
+
+
+def test_get_actionable_tag_list(tag_1, child_tag_1_of_parent_tag_1):
+    result = facade.get_actionable_tag_list()
+
+    assert result == [tag_1, child_tag_1_of_parent_tag_1]
+
+
 def test_get_tag_list__with_item(db_session, tag_1):
     assert facade.get_tag_list() == [tag_1]
 

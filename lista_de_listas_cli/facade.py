@@ -63,10 +63,22 @@ def get_tag_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
     return db_session.query(models.Tag).offset(skip).limit(limit).all()
 
 
-def get_actionable_tag_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
+def get_list_of_tags_with_items(
+    skip: int = 0, limit: int = 100
+) -> [schemas.Item]:
     return (
         db_session.query(models.Tag)
         .filter(models.Tag.items.any())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_actionable_tag_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
+    return (
+        db_session.query(models.Tag)
+        .filter(~models.Tag.children.any())
         .offset(skip)
         .limit(limit)
         .all()

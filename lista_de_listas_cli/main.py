@@ -8,7 +8,7 @@ from database import Base, db_session, engine
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
 from InquirerPy.separator import Separator
-from utils import clear_screen, get_selected_items_info, return_to
+from utils import clear_screen, get_selected_items_info, init_tags, return_to
 
 
 @click.group()
@@ -35,15 +35,20 @@ def add_command(name: str):
     facade.create_item(item)
 
 
+@cli.command(name='interactive')
+def interactive_command():
+    start_interactive()
+
+
+@cli.command(name='init_tags')
+def init_tags_command():
+    init_tags()
+
+
 # @cli.command(name='reset')
 # def reset_command():
 #     for tbl in reversed(Base.metadata.sorted_tables):
 #         engine.execute(tbl.delete())
-
-
-@cli.command(name='interactive')
-def interactive_command():
-    start_interactive()
 
 
 def choices_for_interactive_menu() -> List[Union[Choice, Separator]]:
@@ -54,7 +59,7 @@ def choices_for_interactive_menu() -> List[Union[Choice, Separator]]:
     if facade.get_inbox_items(limit=1):
         choices.append(Choice('inbox', name='Inbox'))
 
-    tag_list = facade.get_actionable_tag_list()
+    tag_list = facade.get_list_of_tags_with_items()
     for tag in tag_list:
         choices.append(Choice(f'tag.{tag.id}', name=f'Context {tag.name}'))
 
@@ -131,7 +136,7 @@ def edit_item(item: schemas.Item, **_):
 
 @return_to
 def edit_item_tags(item: schemas.Item, **_):
-    tag_list = facade.get_tag_list()
+    tag_list = facade.get_actionable_tag_list()
 
     if not tag_list:
         click.echo('There are no tags to display.')
@@ -218,33 +223,6 @@ def show_items(item_list: [schemas.Item], default_choice: int = None, **_):
                 show_item_options(item)
         else:
             ...
-
-
-@cli.command(name='init_tags')
-def init_tags_command():
-    init_tags()
-
-
-def init_tags():
-    status_tag = schemas.TagCreate(name='Status')
-    if not facade.get_tag_by_name(status_tag.name):
-        status_tag = facade.create_tag(status_tag)
-
-    sub_tags = ['Next', 'Waiting', 'Schedule', 'Someday']
-    for tag_name in sub_tags:
-        if not facade.get_tag_by_name(tag_name):
-            tag = schemas.TagCreate(name=tag_name, parent_id=status_tag.id)
-            facade.create_tag(tag)
-
-    status_tag = schemas.TagCreate(name='Area')
-    if not facade.get_tag_by_name(status_tag.name):
-        status_tag = facade.create_tag(status_tag)
-
-    sub_tags = ['Personal', 'Work']
-    for tag_name in sub_tags:
-        if not facade.get_tag_by_name(tag_name):
-            tag = schemas.TagCreate(name=tag_name, parent_id=status_tag.id)
-            facade.create_tag(tag)
 
 
 if __name__ == '__main__':
