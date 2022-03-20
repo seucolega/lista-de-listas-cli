@@ -49,8 +49,10 @@ def interactive_command():
 def choices_for_interactive_menu() -> List[Union[Choice, Separator]]:
     choices = [
         Choice('create', name='New item'),
-        Choice('inbox', name='Inbox'),
     ]
+
+    if facade.get_inbox_items(limit=1):
+        choices.append(Choice('inbox', name='Inbox'))
 
     tag_list = facade.get_actionable_tag_list()
     for tag in tag_list:
@@ -110,8 +112,9 @@ def create_item(**_):
         name=inquirer.text(message='Enter the item title:').execute()
     )
 
-    if inquirer.confirm(message='Confirm?').execute():
-        facade.create_item(item)
+    if inquirer.confirm(message='Confirm?', default=True).execute():
+        item = facade.create_item(item)
+        edit_item_tags(item)
 
 
 @return_to
@@ -127,34 +130,34 @@ def edit_item(item: schemas.Item, **_):
 
 
 @return_to
-def edit_item_tags(item: schemas.Item, default_choice: int = None, **_):
+def edit_item_tags(item: schemas.Item, **_):
     tag_list = facade.get_tag_list()
 
     if not tag_list:
         click.echo('There are no tags to display.')
         return
 
+    item_tag_id_list = [tag.id for tag in item.tags]
     choices = []
+
     for tag in tag_list:
-        choices.append(Choice(tag.id, name=tag.name))
+        choice_enabled = tag.id in item_tag_id_list
+        choices.append(Choice(tag.id, name=tag.name, enabled=choice_enabled))
 
-    choices += [Separator(line=''), Choice(value=None, name='Return')]
-
-    action = inquirer.select(
+    action = inquirer.checkbox(
         message='Select one or more tags:',
         choices=choices,
-        default=default_choice or choices[0].value,
-        multiselect=True,
         transformer=lambda result: get_selected_items_info(result),
     ).execute()
 
-    if action:
-        for tag_id in action:
-            tag = facade.get_tag(tag_id=tag_id)
-            if tag:
-                item.tags.append(tag)
+    tags = []
+    for tag_id in action:
+        tag = facade.get_tag(tag_id)
+        if tag:
+            tags.append(tag)
+    item.tags = tags
 
-        db_session.commit()
+    db_session.commit()
 
 
 @return_to
