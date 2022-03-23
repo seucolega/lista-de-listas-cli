@@ -108,3 +108,20 @@ def create_tag(tag: schemas.TagCreate) -> schemas.Tag:
     db_session.refresh(tag)
 
     return tag
+
+
+def get_item_text_to_show(
+    item: schemas.Item, context: schemas.Tag = None
+) -> str:
+    result = item.name
+
+    tags = []
+
+    for tag in item.tags:
+        if context != tag:
+            tags.append('@' + tag.name.replace(' ', '_'))
+
+    if tags:
+        result += ' ' + ' '.join(tags)
+
+    return result

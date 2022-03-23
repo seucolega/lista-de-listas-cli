@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 
 import click
 import facade
@@ -7,7 +7,6 @@ import schemas
 from database import Base, db_session, engine
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
-from InquirerPy.separator import Separator
 from utils import clear_screen, get_selected_items_info, init_tags, return_to
 
 
@@ -51,7 +50,7 @@ def init_tags_command():
 #         engine.execute(tbl.delete())
 
 
-def choices_for_interactive_menu() -> List[Union[Choice, Separator]]:
+def choices_for_interactive_menu() -> List[Choice]:
     choices = [
         Choice('create', name='New item'),
     ]
@@ -67,7 +66,6 @@ def choices_for_interactive_menu() -> List[Union[Choice, Separator]]:
         # Choice('all', name='All items'),
         Choice('actionable', name='Actionable items'),
         # Choice('non_actionable', name='Non-actionable items'),
-        Separator(line=''),
         Choice(value=None, name='Exit'),
     ]
 
@@ -102,13 +100,19 @@ def start_interactive(default_choice: int = None):
         elif action.startswith('tag.'):
             tag_id = int(action[4:])
 
+            # TODO: move to facade
             item_list = (
                 db_session.query(models.Item)
+                .filter_by(status=schemas.ItemStatus.UNDONE)
                 .filter(models.Item.tags.any(id=tag_id))
                 .all()
             )
 
-            show_items(item_list=item_list, **return_to_kwargs)
+            show_items(
+                item_list=item_list,
+                context=facade.get_tag(tag_id),
+                **return_to_kwargs,
+            )
 
 
 @return_to
@@ -177,7 +181,6 @@ def show_item_options(item: schemas.Item, **_):
         # Choice('duplicate', name='Duplicate'),
         Choice(schemas.ItemStatus.NOTE, name='Convert to note'),
         # Choice('delete', name='Delete'),
-        Separator(line=''),
         Choice(value=None, name='Return'),
     ]
 
@@ -196,16 +199,23 @@ def show_item_options(item: schemas.Item, **_):
 
 
 @return_to
-def show_items(item_list: [schemas.Item], default_choice: int = None, **_):
+def show_items(
+    item_list: [schemas.Item],
+    context: schemas.Tag = None,
+    default_choice: int = None,
+    **_,
+):
     if not item_list:
         click.echo('There are no items to display.')
         return
 
     choices = []
-    for item in item_list:
-        choices.append(Choice(item.id, name=item.name))
 
-    choices += [Separator(line=''), Choice(value=None, name='Return')]
+    for item in item_list:
+        choice_name = facade.get_item_text_to_show(item, context=context)
+        choices.append(Choice(item.id, name=choice_name))
+
+    choices.append(Choice(value=None, name='Return'))
 
     action = inquirer.select(
         message='Select one or more items:',

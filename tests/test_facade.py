@@ -77,3 +77,72 @@ def test_get_tag_by_name__not_found(tag_1):
     tag_1.name = 'Next Actions'
 
     assert not facade.get_tag_by_name('waiting')
+
+
+def test_get_item_text_to_show__item_name_without_tags(item_1):
+    item_1.name = 'Item name'
+    item_1.tags = []
+
+    assert facade.get_item_text_to_show(item_1) == item_1.name
+
+
+def test_get_item_text_to_show__item_with_one_tag(item_1, tag_1):
+    item_1.name = 'Item name'
+    item_1.tags = [tag_1]
+    tag_1.name = 'Waiting'
+
+    expected = 'Item name @Waiting'
+
+    assert facade.get_item_text_to_show(item_1) == expected
+
+
+def test_get_item_text_to_show__item_with_one_spaced_tag(item_1, tag_1):
+    item_1.name = 'Item name'
+    item_1.tags = [tag_1]
+
+    tag_1.name = 'First Tag'
+
+    expected = 'Item name @First_Tag'
+
+    assert facade.get_item_text_to_show(item_1) == expected
+
+
+def test_get_item_text_to_show__item_with_two_tags(item_1, tag_1, tag_2):
+    item_1.name = 'Item name'
+    item_1.tags = [tag_1, tag_2]
+
+    tag_1.name = 'First Tag'
+    tag_2.name = 'Second Tag'
+
+    expected = 'Item name @First_Tag @Second_Tag'
+
+    assert facade.get_item_text_to_show(item_1) == expected
+
+
+def test_get_item_text_to_show__item_with_one_tag_and_context(item_1, tag_1):
+    item_1.name = 'Item name'
+    item_1.tags = [tag_1]
+
+    tag_1.name = 'Waiting'
+
+    result = facade.get_item_text_to_show(item=item_1, context=tag_1)
+
+    expected = 'Item name'
+
+    assert result == expected
+
+
+def test_get_item_text_to_show__item_with_two_tags_and_context(
+    item_1, tag_1, tag_2
+):
+    item_1.name = 'Item name'
+    item_1.tags = [tag_1, tag_2]
+
+    tag_1.name = 'First Tag'
+    tag_2.name = 'Second Tag'
+
+    result = facade.get_item_text_to_show(item=item_1, context=tag_1)
+
+    expected = 'Item name @Second_Tag'
+
+    assert result == expected
