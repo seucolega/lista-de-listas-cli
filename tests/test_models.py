@@ -5,6 +5,10 @@ def test_item_as_str(item_1):
     assert str(item_1) == item_1.name
 
 
+def test_tag_as_str(tag_1):
+    assert str(tag_1) == tag_1.name
+
+
 def test_parent_tag(tag_1, tag_2):
     tag_2.parent_id = tag_1.id
 
