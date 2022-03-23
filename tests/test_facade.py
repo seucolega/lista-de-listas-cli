@@ -65,3 +65,15 @@ def test_create_tag():
     tag = schemas.TagCreate(name='Tag Name')
 
     assert facade.create_tag(tag=tag).id
+
+
+def test_get_tag_by_name__case_insensitive(tag_1):
+    tag_1.name = 'Next Actions'
+
+    assert facade.get_tag_by_name('next actions')
+
+
+def test_get_tag_by_name__not_found(tag_1):
+    tag_1.name = 'Next Actions'
+
+    assert not facade.get_tag_by_name('waiting')
