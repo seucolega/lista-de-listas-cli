@@ -1,3 +1,4 @@
+import time
 from typing import List
 
 import click
@@ -66,6 +67,7 @@ def choices_for_interactive_menu() -> List[Choice]:
         # Choice('all', name='All items'),
         Choice('actionable', name='Actionable items'),
         # Choice('non_actionable', name='Non-actionable items'),
+        Choice('tags', name='Manage tags'),
         Choice(value=None, name='Exit'),
     ]
 
@@ -97,6 +99,8 @@ def start_interactive(default_choice: int = None):
             show_items(
                 item_list=facade.get_actionable_items(), **return_to_kwargs
             )
+        elif action == 'tags':
+            show_tags(**return_to_kwargs)
         elif action.startswith('tag.'):
             tag_id = int(action[4:])
 
@@ -132,7 +136,7 @@ def edit_item(item: schemas.Item, **_):
         message='Enter the item title:', default=item.name
     ).execute()
 
-    if inquirer.confirm(message='Confirm?').execute():
+    if inquirer.confirm(message='Confirm?', default=True).execute():
         db_session.commit()
     else:
         db_session.rollback()
@@ -193,9 +197,9 @@ def show_item_options(item: schemas.Item, **_):
     if isinstance(action, schemas.ItemStatus):
         facade.set_item_status(item=item, status=action)
     elif action == 'edit':
-        edit_item(item=item)
+        edit_item(item)
     elif action == 'tags':
-        edit_item_tags(item=item)
+        edit_item_tags(item)
 
 
 @return_to
@@ -206,7 +210,9 @@ def show_items(
     **_,
 ):
     if not item_list:
+        # TODO: Create a function to show the message and wait a second
         click.echo('There are no items to display.')
+        time.sleep(1)
         return
 
     choices = []
@@ -217,7 +223,7 @@ def show_items(
 
     choices.append(Choice(value=None, name='Return'))
 
-    action = inquirer.select(
+    select_items = inquirer.select(
         message='Select one or more items:',
         choices=choices,
         default=default_choice or choices[0].value,
@@ -225,14 +231,72 @@ def show_items(
         transformer=lambda result: get_selected_items_info(result),
     ).execute()
 
-    if action:
-        if len(action) == 1:
-            item_id = action[0]
-            item = facade.get_item(item_id=item_id)
+    if select_items:
+        if len(select_items) == 1:
+            item_id = select_items[0]
+            item = facade.get_item(item_id)
             if item:
                 show_item_options(item)
         else:
             ...
+
+
+@return_to
+def show_tags(default_choice: int = None, **_):
+    tag_list = facade.get_tag_list()
+
+    if not tag_list:
+        click.echo('There are no items to display.')
+        time.sleep(1)
+        return
+
+    choices = []
+
+    for tag in tag_list:
+        choices.append(Choice(tag.id, name=tag.name))
+
+    choices.append(Choice(value=None, name='Return'))
+
+    tag_id = inquirer.select(
+        message='Select a tag:',
+        choices=choices,
+        default=default_choice or choices[0].value,
+    ).execute()
+
+    if tag_id:
+        tag = facade.get_tag(tag_id)
+        if tag:
+            show_tag_options(tag)
+
+
+@return_to
+def show_tag_options(tag: schemas.Tag, **_):
+    choices = [
+        Choice('edit', name='Edit'),
+        # Choice('delete', name='Delete'),
+        Choice(value=None, name='Return'),
+    ]
+
+    action = inquirer.select(
+        message='Select an action:',
+        choices=choices,
+        default=choices[0].value,
+    ).execute()
+
+    if action == 'edit':
+        edit_tag(tag)
+
+
+@return_to
+def edit_tag(tag: schemas.Tag, **_):
+    tag.name = inquirer.text(
+        message='Enter the tag title:', default=tag.name
+    ).execute()
+
+    if inquirer.confirm(message='Confirm?', default=True).execute():
+        db_session.commit()
+    else:
+        db_session.rollback()
 
 
 if __name__ == '__main__':
