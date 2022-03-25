@@ -9,11 +9,11 @@ def configure_db_session(db_session):
 
 
 def test_get_item_list__empty():
-    assert facade.get_all_items() == []
+    assert facade.get_item_list() == []
 
 
 def test_get_item_list__with_item(item_1):
-    assert facade.get_all_items() == [item_1]
+    assert facade.get_item_list() == [item_1]
 
 
 def test_get_actionable_items(done_item_1, undone_item_1):

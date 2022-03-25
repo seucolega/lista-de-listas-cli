@@ -154,7 +154,7 @@ def test_create_item__with_name_and_confirmed(
 
     main.create_item()
 
-    assert len(facade.get_all_items()) == 1
+    assert len(facade.get_item_list()) == 1
 
 
 @patch('main.edit_item_tags')
@@ -170,3 +170,41 @@ def test_create_item__item_tags_called(
     main.create_item()
 
     assert edit_item_tags_mock.call_count
+
+
+@patch('main.inquirer.confirm')
+@patch('main.inquirer.text')
+def test_create_tag__with_name_and_confirm_called(
+    text_mock, confirm_mock, runner
+):
+    text_mock.return_value.execute.return_value = 'Something'
+    confirm_mock.return_value.execute.return_value = False
+
+    main.create_tag()
+
+    assert confirm_mock.call_count
+
+
+@patch('facade.create_tag')
+@patch('main.inquirer.confirm')
+@patch('main.inquirer.text')
+def test_create_tag__with_name_and_not_confirmed(
+    text_mock, confirm_mock, create_tag_mock, runner
+):
+    text_mock.return_value.execute.return_value = 'Something'
+    confirm_mock.return_value.execute.return_value = False
+
+    main.create_tag()
+
+    assert not create_tag_mock.call_count
+
+
+@patch('main.inquirer.confirm')
+@patch('main.inquirer.text')
+def test_create_tag__with_name_and_confirmed(text_mock, confirm_mock, runner):
+    text_mock.return_value.execute.return_value = 'Something'
+    confirm_mock.return_value.execute.return_value = True
+
+    main.create_tag()
+
+    assert len(facade.get_tag_list()) == 1

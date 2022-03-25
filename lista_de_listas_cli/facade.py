@@ -4,7 +4,7 @@ from database import db_session
 from sqlalchemy import func
 
 
-def get_all_items(skip: int = 0, limit: int = 100) -> [schemas.Item]:
+def get_item_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
     return db_session.query(models.Item).offset(skip).limit(limit).all()
 
 
@@ -43,7 +43,7 @@ def get_item(item_id: int) -> schemas.Item:
 
 def create_item(item: schemas.ItemCreate) -> schemas.Item:
     item = models.Item(
-        id=len(get_all_items()) + 1,
+        id=len(get_item_list()) + 1,
         **item.dict(),
     )
 

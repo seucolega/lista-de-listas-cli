@@ -52,9 +52,7 @@ def init_tags_command():
 
 
 def choices_for_interactive_menu() -> List[Choice]:
-    choices = [
-        Choice('create', name='New item'),
-    ]
+    choices = [Choice('create', name='New item')]
 
     if facade.get_inbox_items(limit=1):
         choices.append(Choice('inbox', name='Inbox'))
@@ -250,23 +248,41 @@ def show_tags(default_choice: int = None, **_):
         time.sleep(1)
         return
 
-    choices = []
+    choices = [Choice('create', name='New tag')]
 
     for tag in tag_list:
         choices.append(Choice(tag.id, name=tag.name))
 
     choices.append(Choice(value=None, name='Return'))
 
-    tag_id = inquirer.select(
-        message='Select a tag:',
+    action = inquirer.select(
+        message='Select an action:',
         choices=choices,
         default=default_choice or choices[0].value,
     ).execute()
 
-    if tag_id:
-        tag = facade.get_tag(tag_id)
-        if tag:
-            show_tag_options(tag)
+    if action:
+        return_to_kwargs = {
+            'return_func': show_tags,
+            'return_choice': action,
+        }
+
+        if action == 'create':
+            create_tag(**return_to_kwargs)
+        else:
+            tag = facade.get_tag(action)
+            if tag:
+                show_tag_options(tag)
+
+
+@return_to
+def create_tag(**_):
+    tag = schemas.TagCreate(
+        name=inquirer.text(message='Enter the tag title:').execute()
+    )
+
+    if inquirer.confirm(message='Confirm?', default=True).execute():
+        facade.create_tag(tag)
 
 
 @return_to
