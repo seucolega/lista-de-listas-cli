@@ -29,6 +29,13 @@ class Item(Base):
     def __str__(self):
         return self.name
 
+    @validates('name')
+    def name_cannot_be_empty(self, _, name: str):
+        if not name.strip():
+            raise ValueError('Name cannot be empty.')
+
+        return name
+
     @validates('tags')
     def just_a_child_tag(self, _, tag):
         if tag.parent_id:
@@ -52,6 +59,13 @@ class Tag(Base):
 
     def __str__(self):
         return self.name
+
+    @validates('name')
+    def name_cannot_be_empty(self, _, name: str):
+        if not name.strip():
+            raise ValueError('Name cannot be empty.')
+
+        return name
 
     @validates('parent_id')
     def mother_tag_cannot_be_your_child(self, _, parent_id):
