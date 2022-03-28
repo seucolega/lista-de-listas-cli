@@ -1,13 +1,14 @@
-from typing import List, Union
+import time
+from typing import List
 
 import click
 import facade
+import models
 import schemas
-from database import db_session
+from database import Base, db_session, engine
 from InquirerPy import inquirer
 from InquirerPy.base.control import Choice
-from InquirerPy.separator import Separator
-from utils import clear_screen, get_selected_items_info, return_to
+from utils import clear_screen, get_selected_items_info, init_tags, return_to
 
 
 @click.group()
@@ -34,26 +35,41 @@ def add_command(name: str):
     facade.create_item(item)
 
 
+@cli.command(name='interactive')
+def interactive_command():
+    start_interactive()
+
+
+@cli.command(name='init_tags')
+def init_tags_command():
+    init_tags()
+
+
 # @cli.command(name='reset')
 # def reset_command():
 #     for tbl in reversed(Base.metadata.sorted_tables):
 #         engine.execute(tbl.delete())
 
 
-@cli.command(name='interactive')
-def interactive_command():
-    start_interactive()
+def choices_for_interactive_menu() -> List[Choice]:
+    choices = [Choice('create', name='New item')]
 
+    if facade.get_inbox_items(limit=1):
+        choices.append(Choice('inbox', name='Inbox'))
 
-def choices_for_interactive_menu() -> List[Union[Choice, Separator]]:
-    return [
-        Choice('create_item', name='Create a new item'),
-        # Choice('list_all', name='Show all items'),
-        Choice('list_actionable', name='Show actionable items'),
-        # Choice('list_non_actionable', name='Show non-actionable items'),
-        Separator(line=''),
+    tag_list = facade.get_list_of_tags_with_items()
+    for tag in tag_list:
+        choices.append(Choice(f'tag.{tag.id}', name=f'Context {tag.name}'))
+
+    choices += [
+        # Choice('all', name='All items'),
+        Choice('actionable', name='Actionable items'),
+        # Choice('non_actionable', name='Non-actionable items'),
+        Choice('tags', name='Manage tags'),
         Choice(value=None, name='Exit'),
     ]
+
+    return choices
 
 
 def start_interactive(default_choice: int = None):
@@ -73,11 +89,31 @@ def start_interactive(default_choice: int = None):
             'return_choice': action,
         }
 
-        if action == 'create_item':
+        if action == 'create':
             create_item(**return_to_kwargs)
-        elif action == 'list_actionable':
+        elif action == 'inbox':
+            show_items(item_list=facade.get_inbox_items(), **return_to_kwargs)
+        elif action == 'actionable':
             show_items(
                 item_list=facade.get_actionable_items(), **return_to_kwargs
+            )
+        elif action == 'tags':
+            show_tags(**return_to_kwargs)
+        elif action.startswith('tag.'):
+            tag_id = int(action[4:])
+
+            # TODO: move to facade
+            item_list = (
+                db_session.query(models.Item)
+                .filter_by(status=schemas.ItemStatus.UNDONE)
+                .filter(models.Item.tags.any(id=tag_id))
+                .all()
+            )
+
+            show_items(
+                item_list=item_list,
+                context=facade.get_tag(tag_id),
+                **return_to_kwargs,
             )
 
 
@@ -87,8 +123,9 @@ def create_item(**_):
         name=inquirer.text(message='Enter the item title:').execute()
     )
 
-    if inquirer.confirm(message='Confirm?').execute():
-        facade.create_item(item)
+    if inquirer.confirm(message='Confirm?', default=True).execute():
+        item = facade.create_item(item)
+        edit_item_tags(item)
 
 
 @return_to
@@ -97,25 +134,55 @@ def edit_item(item: schemas.Item, **_):
         message='Enter the item title:', default=item.name
     ).execute()
 
-    if inquirer.confirm(message='Confirm?').execute():
+    if inquirer.confirm(message='Confirm?', default=True).execute():
         db_session.commit()
     else:
         db_session.rollback()
 
 
 @return_to
+def edit_item_tags(item: schemas.Item, **_):
+    tag_list = facade.get_actionable_tag_list()
+
+    if not tag_list:
+        click.echo('There are no tags to display.')
+        return
+
+    item_tag_id_list = [tag.id for tag in item.tags]
+    choices = []
+
+    for tag in tag_list:
+        choice_enabled = tag.id in item_tag_id_list
+        choices.append(Choice(tag.id, name=tag.name, enabled=choice_enabled))
+
+    action = inquirer.checkbox(
+        message='Select one or more tags:',
+        choices=choices,
+        transformer=lambda result: get_selected_items_info(result),
+    ).execute()
+
+    tags = []
+    for tag_id in action:
+        tag = facade.get_tag(tag_id)
+        if tag:
+            tags.append(tag)
+    item.tags = tags
+
+    db_session.commit()
+
+
+@return_to
 def show_item_options(item: schemas.Item, **_):
     choices = [
         Choice(schemas.ItemStatus.DONE, name='Done'),
+        Choice(schemas.ItemStatus.WONT, name="Won't do"),
         Choice('edit', name='Edit'),
         # Choice('subtask', name='Add subtask'),
-        Choice(schemas.ItemStatus.WONT, name="Won't do"),
         # Choice('move-to', name='Move to'),
-        # Choice('tags', name='Tags'),
+        Choice('tags', name='Tags'),
         # Choice('duplicate', name='Duplicate'),
         Choice(schemas.ItemStatus.NOTE, name='Convert to note'),
         # Choice('delete', name='Delete'),
-        Separator(line=''),
         Choice(value=None, name='Return'),
     ]
 
@@ -128,22 +195,33 @@ def show_item_options(item: schemas.Item, **_):
     if isinstance(action, schemas.ItemStatus):
         facade.set_item_status(item=item, status=action)
     elif action == 'edit':
-        edit_item(item=item)
+        edit_item(item)
+    elif action == 'tags':
+        edit_item_tags(item)
 
 
 @return_to
-def show_items(item_list: [schemas.Item], default_choice: int = None, **_):
+def show_items(
+    item_list: [schemas.Item],
+    context: schemas.Tag = None,
+    default_choice: int = None,
+    **_,
+):
     if not item_list:
+        # TODO: Create a function to show the message and wait a second
         click.echo('There are no items to display.')
+        time.sleep(1)
         return
 
     choices = []
+
     for item in item_list:
-        choices.append(Choice(item.id, name=item.name))
+        choice_name = facade.get_item_text_to_show(item, context=context)
+        choices.append(Choice(item.id, name=choice_name))
 
-    choices += [Separator(line=''), Choice(value=None, name='Return')]
+    choices.append(Choice(value=None, name='Return'))
 
-    action = inquirer.select(
+    select_items = inquirer.select(
         message='Select one or more items:',
         choices=choices,
         default=default_choice or choices[0].value,
@@ -151,17 +229,94 @@ def show_items(item_list: [schemas.Item], default_choice: int = None, **_):
         transformer=lambda result: get_selected_items_info(result),
     ).execute()
 
-    if action:
-        if len(action) == 1:
-            item_id = action[0]
-            item = facade.get_item(item_id=item_id)
+    if select_items:
+        if len(select_items) == 1:
+            item_id = select_items[0]
+            item = facade.get_item(item_id)
             if item:
                 show_item_options(item)
         else:
             ...
 
 
+@return_to
+def show_tags(default_choice: int = None, **_):
+    tag_list = facade.get_tag_list()
+
+    if not tag_list:
+        click.echo('There are no items to display.')
+        time.sleep(1)
+        return
+
+    choices = [Choice('create', name='New tag')]
+
+    for tag in tag_list:
+        choices.append(Choice(tag.id, name=tag.name))
+
+    choices.append(Choice(value=None, name='Return'))
+
+    action = inquirer.select(
+        message='Select an action:',
+        choices=choices,
+        default=default_choice or choices[0].value,
+    ).execute()
+
+    if action:
+        return_to_kwargs = {
+            'return_func': show_tags,
+            'return_choice': action,
+        }
+
+        if action == 'create':
+            create_tag(**return_to_kwargs)
+        else:
+            tag = facade.get_tag(action)
+            if tag:
+                show_tag_options(tag)
+
+
+@return_to
+def create_tag(**_):
+    tag = schemas.TagCreate(
+        name=inquirer.text(message='Enter the tag title:').execute()
+    )
+
+    if inquirer.confirm(message='Confirm?', default=True).execute():
+        facade.create_tag(tag)
+
+
+@return_to
+def show_tag_options(tag: schemas.Tag, **_):
+    choices = [
+        Choice('edit', name='Edit'),
+        # Choice('delete', name='Delete'),
+        Choice(value=None, name='Return'),
+    ]
+
+    action = inquirer.select(
+        message='Select an action:',
+        choices=choices,
+        default=choices[0].value,
+    ).execute()
+
+    if action == 'edit':
+        edit_tag(tag)
+
+
+@return_to
+def edit_tag(tag: schemas.Tag, **_):
+    tag.name = inquirer.text(
+        message='Enter the tag title:', default=tag.name
+    ).execute()
+
+    if inquirer.confirm(message='Confirm?', default=True).execute():
+        db_session.commit()
+    else:
+        db_session.rollback()
+
+
 if __name__ == '__main__':
+    Base.metadata.create_all(bind=engine)
     try:
         cli()
     finally:

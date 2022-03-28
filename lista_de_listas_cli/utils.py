@@ -1,6 +1,9 @@
 import os
 from typing import Any, Callable, Union
 
+import facade
+import schemas
+
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -66,3 +69,25 @@ def get_selected_items_info(action: list) -> Union[Any, str, None]:
         return action[0]
 
     return None
+
+
+def init_tags():
+    status_tag = schemas.TagCreate(name='Status')
+    if not facade.get_tag_by_name(status_tag.name):
+        status_tag = facade.create_tag(status_tag)
+
+    sub_tags = ['Next', 'Waiting', 'Schedule', 'Someday']
+    for tag_name in sub_tags:
+        if not facade.get_tag_by_name(tag_name):
+            tag = schemas.TagCreate(name=tag_name, parent_id=status_tag.id)
+            facade.create_tag(tag)
+
+    status_tag = schemas.TagCreate(name='Area')
+    if not facade.get_tag_by_name(status_tag.name):
+        status_tag = facade.create_tag(status_tag)
+
+    sub_tags = ['Personal', 'Work']
+    for tag_name in sub_tags:
+        if not facade.get_tag_by_name(tag_name):
+            tag = schemas.TagCreate(name=tag_name, parent_id=status_tag.id)
+            facade.create_tag(tag)

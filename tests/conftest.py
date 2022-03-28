@@ -17,16 +17,6 @@ SQLALCHEMY_DATABASE_URL = config(
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 
-# def get_test_db():
-#     session_local = sessionmaker(bind=engine)
-#     test_db = session_local()
-#
-#     try:
-#         yield test_db
-#     finally:
-#         test_db.close()
-
-
 @pytest.fixture(scope='session', autouse=True)
 def create_test_database():
     """Create a clean database on every test case.
@@ -54,12 +44,19 @@ def db_session():
 
     yield session
 
+    session.rollback()
+
     # Drop all data after each test
     for tbl in reversed(Base.metadata.sorted_tables):
         engine.execute(tbl.delete())
 
     # put back the connection to the connection pool
     session.close()
+
+
+@pytest.fixture(autouse=True)
+def configure_db_session(db_session):
+    facade.db_session = db_session
 
 
 @pytest.fixture
@@ -88,3 +85,42 @@ def undone_item_1(db_session):
 @pytest.fixture
 def runner():
     return CliRunner()
+
+
+@pytest.fixture
+def tag_1(db_session):
+    return facade.create_tag(
+        schemas.TagCreate(name='Tag name', parent_id=None)
+    )
+
+
+@pytest.fixture
+def tag_2(db_session):
+    return facade.create_tag(
+        schemas.TagCreate(name='A second tag', parent_id=None)
+    )
+
+
+@pytest.fixture
+def parent_tag_1(db_session):
+    return facade.create_tag(
+        schemas.TagCreate(name='Parent tag 1', parent_id=None)
+    )
+
+
+@pytest.fixture
+def child_tag_1_of_parent_tag_1(db_session, parent_tag_1):
+    return facade.create_tag(
+        schemas.TagCreate(
+            name='Child 1 of Parent tag 1', parent_id=parent_tag_1.id
+        )
+    )
+
+
+@pytest.fixture
+def child_tag_2_of_parent_tag_1(db_session, parent_tag_1):
+    return facade.create_tag(
+        schemas.TagCreate(
+            name='Child 2 of Parent tag 1', parent_id=parent_tag_1.id
+        )
+    )
