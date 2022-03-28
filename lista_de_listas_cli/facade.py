@@ -29,6 +29,19 @@ def get_inbox_items(skip: int = 0, limit: int = 100) -> [schemas.Item]:
     )
 
 
+def get_actionable_items_with_the_tag(
+    tag_id: int, skip: int = 0, limit: int = 100
+) -> [schemas.Item]:
+    return (
+        db_session.query(models.Item)
+        .filter_by(status=schemas.ItemStatus.UNDONE)
+        .filter(models.Item.tags.any(id=tag_id))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 # def get_non_actionable_items(
 #         skip: int = 0, limit: int = 100
 # ) -> [schemas.Item]:

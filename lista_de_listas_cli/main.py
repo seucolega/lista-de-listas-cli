@@ -102,13 +102,7 @@ def start_interactive(default_choice: int = None):
         elif action.startswith('tag.'):
             tag_id = int(action[4:])
 
-            # TODO: move to facade
-            item_list = (
-                db_session.query(models.Item)
-                .filter_by(status=schemas.ItemStatus.UNDONE)
-                .filter(models.Item.tags.any(id=tag_id))
-                .all()
-            )
+            item_list = facade.get_actionable_items_with_the_tag(tag_id)
 
             show_items(
                 item_list=item_list,
