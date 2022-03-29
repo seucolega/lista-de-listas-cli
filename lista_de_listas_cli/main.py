@@ -57,7 +57,7 @@ def choices_for_interactive_menu() -> List[Choice]:
     if facade.get_inbox_items(limit=1):
         choices.append(Choice('inbox', name='Inbox'))
 
-    tag_list = facade.get_list_of_tags_with_items()
+    tag_list = facade.get_list_of_tags_with_actionable_items()
     for tag in tag_list:
         choices.append(Choice(f'tag.{tag.id}', name=f'Context {tag.name}'))
 

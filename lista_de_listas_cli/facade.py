@@ -88,6 +88,21 @@ def get_list_of_tags_with_items(
     )
 
 
+def get_list_of_tags_with_actionable_items(
+    skip: int = 0, limit: int = 100
+) -> [schemas.Item]:
+    return (
+        db_session.query(models.Tag)
+        .join(models.ItemTag, models.ItemTag.tag_id == models.Tag.id)
+        .join(models.Item, models.Item.id == models.ItemTag.item_id)
+        .filter(models.Item.status == schemas.ItemStatus.UNDONE)
+        .distinct()
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 def get_actionable_tag_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
     return (
         db_session.query(models.Tag)

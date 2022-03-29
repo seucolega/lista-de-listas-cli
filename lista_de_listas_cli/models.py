@@ -7,12 +7,12 @@ from sqlalchemy.orm import relationship, validates
 
 Base.metadata.create_all(bind=engine)
 
-item_and_tag = Table(
-    'item_tag',
-    Base.metadata,
-    Column('item_id', ForeignKey('item.id'), primary_key=True),
-    Column('tag_id', ForeignKey('tag.id'), primary_key=True),
-)
+
+class ItemTag(Base):
+    __tablename__ = 'item_tag'
+
+    item_id = Column(ForeignKey('item.id'), primary_key=True)
+    tag_id = Column(ForeignKey('tag.id'), primary_key=True)
 
 
 class Item(Base):
@@ -23,7 +23,7 @@ class Item(Base):
     description: str = Column(String, nullable=True)
     status: Enum = Column(Enum(ItemStatus), default=ItemStatus.UNDONE)
     tags: Union[list, Any] = relationship(
-        'Tag', secondary=item_and_tag, back_populates='items'
+        'Tag', secondary='item_tag', back_populates='items'
     )
 
     def __str__(self):
@@ -54,7 +54,7 @@ class Tag(Base):
     parent_id: int = Column(BigInteger, ForeignKey('tag.id'), nullable=True)
     children: Union[list, Any] = relationship('Tag')
     items: Union[list, Any] = relationship(
-        'Item', secondary=item_and_tag, back_populates='tags'
+        'Item', secondary='item_tag', back_populates='tags'
     )
 
     def __str__(self):

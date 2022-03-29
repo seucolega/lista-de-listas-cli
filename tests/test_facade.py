@@ -243,3 +243,19 @@ def test_get_tag_text_to_show__item_with_one_tag_and_context(
     expected = 'Tag name'
 
     assert result == expected
+
+
+def test_get_list_of_tags_with_actionable_items__with_a_done_item(
+    done_item_1, tag_1
+):
+    done_item_1.tags = [tag_1]
+
+    assert facade.get_list_of_tags_with_actionable_items() == []
+
+
+def test_get_list_of_tags_with_actionable_items__with_an_undone_item(
+    undone_item_1, tag_1
+):
+    undone_item_1.tags = [tag_1]
+
+    assert facade.get_list_of_tags_with_actionable_items() == [tag_1]
