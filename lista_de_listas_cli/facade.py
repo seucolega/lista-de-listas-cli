@@ -138,3 +138,14 @@ def get_item_text_to_show(
         result += ' ' + ' '.join(tags)
 
     return result
+
+
+def get_tag_text_to_show(tag: schemas.Tag, context: schemas.Tag = None) -> str:
+    result = tag.name
+
+    if tag.parent_id:
+        parent_tag = get_tag(tag.parent_id)
+        if parent_tag and context != parent_tag:
+            result += ' @' + parent_tag.name.replace(' ', '_')
+
+    return result

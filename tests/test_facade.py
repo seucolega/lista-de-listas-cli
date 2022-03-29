@@ -202,3 +202,44 @@ def test_get_item_text_to_show__item_with_two_tags_and_context(
     expected = 'Item name @Second_Tag'
 
     assert result == expected
+
+
+def test_get_tag_text_to_show__tag_without_parent_tag(tag_1):
+    assert facade.get_tag_text_to_show(tag_1) == tag_1.name
+
+
+def test_get_tag_text_to_show__item_with_parent_tag(
+    parent_tag_1, child_tag_1_of_parent_tag_1
+):
+    child_tag_1_of_parent_tag_1.name = 'Tag name'
+    parent_tag_1.name = 'Waiting'
+
+    expected = 'Tag name @Waiting'
+
+    assert facade.get_tag_text_to_show(child_tag_1_of_parent_tag_1) == expected
+
+
+def test_get_tag_text_to_show__item_with_one_spaced_tag(
+    parent_tag_1, child_tag_1_of_parent_tag_1
+):
+    child_tag_1_of_parent_tag_1.name = 'Tag name'
+    parent_tag_1.name = 'Parent Tag'
+
+    expected = 'Tag name @Parent_Tag'
+
+    assert facade.get_tag_text_to_show(child_tag_1_of_parent_tag_1) == expected
+
+
+def test_get_tag_text_to_show__item_with_one_tag_and_context(
+    parent_tag_1, child_tag_1_of_parent_tag_1
+):
+    child_tag_1_of_parent_tag_1.name = 'Tag name'
+    parent_tag_1.name = 'Waiting'
+
+    result = facade.get_tag_text_to_show(
+        tag=child_tag_1_of_parent_tag_1, context=parent_tag_1
+    )
+
+    expected = 'Tag name'
+
+    assert result == expected

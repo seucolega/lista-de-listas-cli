@@ -245,7 +245,7 @@ def show_tags(default_choice: int = None, **_):
     choices = [Choice('create', name='New tag')]
 
     for tag in tag_list:
-        choices.append(Choice(tag.id, name=tag.name))
+        choices.append(Choice(tag.id, name=facade.get_tag_text_to_show(tag)))
 
     choices.append(Choice(value=None, name='Return'))
 
