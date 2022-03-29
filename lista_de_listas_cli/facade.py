@@ -29,6 +29,19 @@ def get_inbox_items(skip: int = 0, limit: int = 100) -> [schemas.Item]:
     )
 
 
+def get_actionable_items_with_the_tag(
+    tag_id: int, skip: int = 0, limit: int = 100
+) -> [schemas.Item]:
+    return (
+        db_session.query(models.Item)
+        .filter_by(status=schemas.ItemStatus.UNDONE)
+        .filter(models.Item.tags.any(id=tag_id))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 # def get_non_actionable_items(
 #         skip: int = 0, limit: int = 100
 # ) -> [schemas.Item]:
@@ -69,6 +82,21 @@ def get_list_of_tags_with_items(
     return (
         db_session.query(models.Tag)
         .filter(models.Tag.items.any())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def get_list_of_tags_with_actionable_items(
+    skip: int = 0, limit: int = 100
+) -> [schemas.Item]:
+    return (
+        db_session.query(models.Tag)
+        .join(models.ItemTag, models.ItemTag.tag_id == models.Tag.id)
+        .join(models.Item, models.Item.id == models.ItemTag.item_id)
+        .filter(models.Item.status == schemas.ItemStatus.UNDONE)
+        .distinct()
         .offset(skip)
         .limit(limit)
         .all()
@@ -123,5 +151,16 @@ def get_item_text_to_show(
 
     if tags:
         result += ' ' + ' '.join(tags)
+
+    return result
+
+
+def get_tag_text_to_show(tag: schemas.Tag, context: schemas.Tag = None) -> str:
+    result = tag.name
+
+    if tag.parent_id:
+        parent_tag = get_tag(tag.parent_id)
+        if parent_tag and context != parent_tag:
+            result += ' @' + parent_tag.name.replace(' ', '_')
 
     return result

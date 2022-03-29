@@ -57,7 +57,7 @@ def choices_for_interactive_menu() -> List[Choice]:
     if facade.get_inbox_items(limit=1):
         choices.append(Choice('inbox', name='Inbox'))
 
-    tag_list = facade.get_list_of_tags_with_items()
+    tag_list = facade.get_list_of_tags_with_actionable_items()
     for tag in tag_list:
         choices.append(Choice(f'tag.{tag.id}', name=f'Context {tag.name}'))
 
@@ -102,13 +102,7 @@ def start_interactive(default_choice: int = None):
         elif action.startswith('tag.'):
             tag_id = int(action[4:])
 
-            # TODO: move to facade
-            item_list = (
-                db_session.query(models.Item)
-                .filter_by(status=schemas.ItemStatus.UNDONE)
-                .filter(models.Item.tags.any(id=tag_id))
-                .all()
-            )
+            item_list = facade.get_actionable_items_with_the_tag(tag_id)
 
             show_items(
                 item_list=item_list,
@@ -251,7 +245,7 @@ def show_tags(default_choice: int = None, **_):
     choices = [Choice('create', name='New tag')]
 
     for tag in tag_list:
-        choices.append(Choice(tag.id, name=tag.name))
+        choices.append(Choice(tag.id, name=facade.get_tag_text_to_show(tag)))
 
     choices.append(Choice(value=None, name='Return'))
 

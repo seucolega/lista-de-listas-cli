@@ -108,6 +108,25 @@ def test_choices_for_interactive_menu__has_the_tag_name_choice(item_1, tag_1):
     assert [choice for choice in choices if tag_1.name in choice.name]
 
 
+def test_choices_for_interactive_menu__has_no_empty_context_tag(item_1, tag_1):
+    tag_1.name = 'My tag'
+
+    choices = main.choices_for_interactive_menu()
+
+    assert not [choice for choice in choices if tag_1.name in choice.name]
+
+
+def test_choices_for_interactive_menu__has_no_empty_context_tag_2(
+    done_item_1, tag_1
+):
+    done_item_1.tags = [tag_1]
+    tag_1.name = 'My tag'
+
+    choices = main.choices_for_interactive_menu()
+
+    assert not [choice for choice in choices if tag_1.name in choice.name]
+
+
 @patch('main.init_tags')
 def test_init_tags_command__calls_init_tags(mock, runner):
     runner.invoke(main.init_tags_command)
