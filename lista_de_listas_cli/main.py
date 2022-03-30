@@ -303,6 +303,20 @@ def edit_tag(tag: schemas.Tag, **_):
         message='Enter the tag title:', default=tag.name
     ).execute()
 
+    choices = [Choice(value=None, name='No parent tag')]
+
+    for tag_list_item in facade.get_tag_list_without_parent():
+        choices.append(Choice(tag_list_item.id, name=tag_list_item.name))
+
+    parent_id = inquirer.select(
+        message='Select a parent tag:',
+        choices=choices,
+        default=tag.parent_id,
+    ).execute()
+
+    if parent_id:
+        tag.parent_id = parent_id
+
     if inquirer.confirm(message='Confirm?', default=True).execute():
         db_session.commit()
     else:

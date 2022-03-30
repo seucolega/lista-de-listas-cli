@@ -113,6 +113,18 @@ def get_actionable_tag_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
     )
 
 
+def get_tag_list_without_parent(
+    skip: int = 0, limit: int = 100
+) -> [schemas.Tag]:
+    return (
+        db_session.query(models.Tag)
+        .filter_by(parent_id=None)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 def get_tag(tag_id: int) -> schemas.Tag:
     return db_session.query(models.Tag).filter_by(id=tag_id).first()
 
