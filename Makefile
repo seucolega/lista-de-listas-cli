@@ -6,11 +6,11 @@ install:
 	@poetry install
 	@pip uninstall pylint-django -y
 format:
-	@blue .
-	@isort . $(ISORT_ARGS)
+	@poetry run blue .
+	@poetry run isort . $(ISORT_ARGS)
 lint:
-	@blue . --check
-	@isort . --check $(ISORT_ARGS)
+	@poetry run blue . --check
+	@poetry run isort . --check $(ISORT_ARGS)
 test:
-	@prospector . --with-tool pydocstyle --doc-warning
-	@pytest . -v --cov --cov-report term-missing
+	@poetry run prospector . --with-tool pydocstyle --doc-warning
+	@poetry run pytest . -v --cov --cov-report term-missing

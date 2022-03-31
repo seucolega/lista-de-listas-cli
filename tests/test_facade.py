@@ -113,6 +113,12 @@ def test_get_tag_list__with_item(db_session, tag_1):
     assert facade.get_tag_list() == [tag_1]
 
 
+def test_get_tag_list_without_parent(
+    parent_tag_1, child_tag_1_of_parent_tag_1
+):
+    assert facade.get_tag_list_without_parent() == [parent_tag_1]
+
+
 def test_get_tag(tag_1):
     assert facade.get_tag(tag_id=tag_1.id) == tag_1
 
