@@ -3,7 +3,6 @@ from typing import List
 
 import click
 import facade
-import models
 import schemas
 from database import Base, db_session, engine
 from InquirerPy import inquirer
@@ -275,6 +274,11 @@ def create_tag(**_):
         name=inquirer.text(message='Enter the tag title:').execute()
     )
 
+    parent_id = ask_for_parent_tag_when_editing_a_tag(tag.parent_id)
+
+    if parent_id:
+        tag.parent_id = parent_id
+
     if inquirer.confirm(message='Confirm?', default=True).execute():
         facade.create_tag(tag)
 
@@ -303,16 +307,7 @@ def edit_tag(tag: schemas.Tag, **_):
         message='Enter the tag title:', default=tag.name
     ).execute()
 
-    choices = [Choice(value=None, name='No parent tag')]
-
-    for tag_list_item in facade.get_tag_list_without_parent():
-        choices.append(Choice(tag_list_item.id, name=tag_list_item.name))
-
-    parent_id = inquirer.select(
-        message='Select a parent tag:',
-        choices=choices,
-        default=tag.parent_id,
-    ).execute()
+    parent_id = ask_for_parent_tag_when_editing_a_tag(tag.parent_id)
 
     if parent_id:
         tag.parent_id = parent_id
@@ -321,6 +316,19 @@ def edit_tag(tag: schemas.Tag, **_):
         db_session.commit()
     else:
         db_session.rollback()
+
+
+def ask_for_parent_tag_when_editing_a_tag(default_choice: int = None):
+    choices = [Choice(value=None, name='No parent tag')]
+
+    for tag_list_item in facade.get_tag_list_without_parent():
+        choices.append(Choice(tag_list_item.id, name=tag_list_item.name))
+
+    return inquirer.select(
+        message='Select a parent tag:',
+        choices=choices,
+        default=default_choice,
+    ).execute()
 
 
 if __name__ == '__main__':

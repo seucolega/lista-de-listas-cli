@@ -206,11 +206,13 @@ def test_create_item__item_tags_called(
 
 
 @patch('main.inquirer.confirm')
+@patch('main.ask_for_parent_tag_when_editing_a_tag')
 @patch('main.inquirer.text')
 def test_create_tag__with_name_and_confirm_called(
-    text_mock, confirm_mock, runner
+    text_mock, parent_id_mock, confirm_mock, runner
 ):
     text_mock.return_value.execute.return_value = 'Something'
+    parent_id_mock.return_value = None
     confirm_mock.return_value.execute.return_value = False
 
     main.create_tag()
@@ -220,11 +222,13 @@ def test_create_tag__with_name_and_confirm_called(
 
 @patch('facade.create_tag')
 @patch('main.inquirer.confirm')
+@patch('main.ask_for_parent_tag_when_editing_a_tag')
 @patch('main.inquirer.text')
 def test_create_tag__with_name_and_not_confirmed(
-    text_mock, confirm_mock, create_tag_mock, runner
+    text_mock, parent_id_mock, confirm_mock, create_tag_mock, runner
 ):
     text_mock.return_value.execute.return_value = 'Something'
+    parent_id_mock.return_value = None
     confirm_mock.return_value.execute.return_value = False
 
     main.create_tag()
@@ -233,9 +237,13 @@ def test_create_tag__with_name_and_not_confirmed(
 
 
 @patch('main.inquirer.confirm')
+@patch('main.ask_for_parent_tag_when_editing_a_tag')
 @patch('main.inquirer.text')
-def test_create_tag__with_name_and_confirmed(text_mock, confirm_mock, runner):
+def test_create_tag__with_name_and_confirmed(
+    text_mock, parent_id_mock, confirm_mock, runner
+):
     text_mock.return_value.execute.return_value = 'Something'
+    parent_id_mock.return_value = None
     confirm_mock.return_value.execute.return_value = True
 
     main.create_tag()
