@@ -4,11 +4,11 @@ from database import db_session
 from sqlalchemy import func
 
 
-def get_item_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
+def get_item_list(skip: int = 0, limit: int = 100) -> [models.Item]:
     return db_session.query(models.Item).offset(skip).limit(limit).all()
 
 
-def get_actionable_items(skip: int = 0, limit: int = 100) -> [schemas.Item]:
+def get_actionable_items(skip: int = 0, limit: int = 100) -> [models.Item]:
     return (
         db_session.query(models.Item)
         .filter_by(status=schemas.ItemStatus.UNDONE)
@@ -18,7 +18,7 @@ def get_actionable_items(skip: int = 0, limit: int = 100) -> [schemas.Item]:
     )
 
 
-def get_inbox_items(skip: int = 0, limit: int = 100) -> [schemas.Item]:
+def get_inbox_items(skip: int = 0, limit: int = 100) -> [models.Item]:
     return (
         db_session.query(models.Item)
         .filter_by(status=schemas.ItemStatus.UNDONE)
@@ -31,7 +31,7 @@ def get_inbox_items(skip: int = 0, limit: int = 100) -> [schemas.Item]:
 
 def get_actionable_items_with_the_tag(
     tag_id: int, skip: int = 0, limit: int = 100
-) -> [schemas.Item]:
+) -> [models.Item]:
     return (
         db_session.query(models.Item)
         .filter_by(status=schemas.ItemStatus.UNDONE)
@@ -44,17 +44,17 @@ def get_actionable_items_with_the_tag(
 
 # def get_non_actionable_items(
 #         skip: int = 0, limit: int = 100
-# ) -> [schemas.Item]:
+# ) -> [models.Item]:
 #     return db_session.query(models.Item) \
 #         .filter_by(status=schemas.ItemStatus.NOTE) \
 #         .offset(skip).limit(limit).all()
 
 
-def get_item(item_id: int) -> schemas.Item:
+def get_item(item_id: int) -> models.Item:
     return db_session.query(models.Item).filter_by(id=item_id).first()
 
 
-def create_item(item: schemas.ItemCreate) -> schemas.Item:
+def create_item(item: schemas.ItemCreate) -> models.Item:
     item = models.Item(
         id=len(get_item_list()) + 1,
         **item.dict(),
@@ -67,18 +67,18 @@ def create_item(item: schemas.ItemCreate) -> schemas.Item:
     return item
 
 
-def set_item_status(item: schemas.Item, status: schemas.ItemStatus):
+def set_item_status(item: models.Item, status: schemas.ItemStatus):
     item.status = status
     db_session.commit()
 
 
-def get_tag_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
+def get_tag_list(skip: int = 0, limit: int = 100) -> [models.Item]:
     return db_session.query(models.Tag).offset(skip).limit(limit).all()
 
 
 def get_list_of_tags_with_items(
     skip: int = 0, limit: int = 100
-) -> [schemas.Item]:
+) -> [models.Item]:
     return (
         db_session.query(models.Tag)
         .filter(models.Tag.items.any())
@@ -90,7 +90,7 @@ def get_list_of_tags_with_items(
 
 def get_list_of_tags_with_actionable_items(
     skip: int = 0, limit: int = 100
-) -> [schemas.Item]:
+) -> [models.Item]:
     return (
         db_session.query(models.Tag)
         .join(models.ItemTag, models.ItemTag.tag_id == models.Tag.id)
@@ -103,7 +103,7 @@ def get_list_of_tags_with_actionable_items(
     )
 
 
-def get_actionable_tag_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
+def get_actionable_tag_list(skip: int = 0, limit: int = 100) -> [models.Item]:
     return (
         db_session.query(models.Tag)
         .filter(~models.Tag.children.any())
@@ -115,7 +115,7 @@ def get_actionable_tag_list(skip: int = 0, limit: int = 100) -> [schemas.Item]:
 
 def get_tag_list_without_parent(
     skip: int = 0, limit: int = 100
-) -> [schemas.Tag]:
+) -> [models.Tag]:
     return (
         db_session.query(models.Tag)
         .filter_by(parent_id=None)
@@ -125,11 +125,11 @@ def get_tag_list_without_parent(
     )
 
 
-def get_tag(tag_id: int) -> schemas.Tag:
+def get_tag(tag_id: int) -> models.Tag:
     return db_session.query(models.Tag).filter_by(id=tag_id).first()
 
 
-def get_tag_by_name(tag_name: str) -> schemas.Tag:
+def get_tag_by_name(tag_name: str) -> models.Tag:
     return (
         db_session.query(models.Tag)
         .filter(func.lower(models.Tag.name) == func.lower(tag_name))
@@ -137,7 +137,7 @@ def get_tag_by_name(tag_name: str) -> schemas.Tag:
     )
 
 
-def create_tag(tag: schemas.TagCreate) -> schemas.Tag:
+def create_tag(tag: schemas.TagCreate) -> models.Tag:
     tag = models.Tag(
         id=len(get_tag_list()) + 1,
         **tag.dict(),
@@ -151,7 +151,7 @@ def create_tag(tag: schemas.TagCreate) -> schemas.Tag:
 
 
 def get_item_text_to_show(
-    item: schemas.Item, context: schemas.Tag = None
+    item: models.Item, context: models.Tag = None
 ) -> str:
     result = item.name
 
@@ -167,7 +167,7 @@ def get_item_text_to_show(
     return result
 
 
-def get_tag_text_to_show(tag: schemas.Tag, context: schemas.Tag = None) -> str:
+def get_tag_text_to_show(tag: models.Tag, context: models.Tag = None) -> str:
     result = tag.name
 
     if tag.parent_id:
