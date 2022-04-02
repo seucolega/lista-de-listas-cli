@@ -3,6 +3,7 @@ from typing import List
 
 import click
 import facade
+import models
 import schemas
 from database import Base, db_session, engine
 from InquirerPy import inquirer
@@ -122,19 +123,19 @@ def create_item(**_):
 
 
 @return_to
-def edit_item(item: schemas.Item, **_):
-    item.name = inquirer.text(
+def edit_item(item: models.Item, **_):
+    item_name = inquirer.text(
         message='Enter the item title:', default=item.name
     ).execute()
 
     if inquirer.confirm(message='Confirm?', default=True).execute():
+        item.name = item_name
+
         db_session.commit()
-    else:
-        db_session.rollback()
 
 
 @return_to
-def edit_item_tags(item: schemas.Item, **_):
+def edit_item_tags(item: models.Item, **_):
     tag_list = facade.get_actionable_tag_list()
 
     if not tag_list:
@@ -165,7 +166,7 @@ def edit_item_tags(item: schemas.Item, **_):
 
 
 @return_to
-def show_item_options(item: schemas.Item, **_):
+def show_item_options(item: models.Item, **_):
     choices = [
         Choice(schemas.ItemStatus.DONE, name='Done'),
         Choice(schemas.ItemStatus.WONT, name="Won't do"),
@@ -195,8 +196,8 @@ def show_item_options(item: schemas.Item, **_):
 
 @return_to
 def show_items(
-    item_list: [schemas.Item],
-    context: schemas.Tag = None,
+    item_list: [models.Item],
+    context: models.Tag = None,
     default_choice: int = None,
     **_,
 ):
@@ -284,7 +285,7 @@ def create_tag(**_):
 
 
 @return_to
-def show_tag_options(tag: schemas.Tag, **_):
+def show_tag_options(tag: models.Tag, **_):
     choices = [
         Choice('edit', name='Edit'),
         # Choice('delete', name='Delete'),
@@ -302,7 +303,7 @@ def show_tag_options(tag: schemas.Tag, **_):
 
 
 @return_to
-def edit_tag(tag: schemas.Tag, **_):
+def edit_tag(tag: models.Tag, **_):
     tag.name = inquirer.text(
         message='Enter the tag title:', default=tag.name
     ).execute()
