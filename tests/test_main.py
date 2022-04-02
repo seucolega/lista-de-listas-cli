@@ -249,3 +249,59 @@ def test_create_tag__with_name_and_confirmed(
     main.create_tag()
 
     assert len(facade.get_tag_list()) == 1
+
+
+@patch('main.inquirer.confirm')
+@patch('main.inquirer.text')
+def test_edit_item__not_confirmed(text_mock, confirm_mock, item_1):
+    item_1.name = 'My item'
+
+    text_mock.return_value.execute.return_value = 'Something'
+    confirm_mock.return_value.execute.return_value = False
+
+    main.edit_item(item_1)
+
+    assert item_1.name == 'My item'
+
+
+@patch('main.inquirer.confirm')
+@patch('main.inquirer.text')
+def test_edit_item__confirmed(text_mock, confirm_mock, item_1):
+    item_1.name = 'My item'
+
+    text_mock.return_value.execute.return_value = 'Something'
+    confirm_mock.return_value.execute.return_value = True
+
+    main.edit_item(item_1)
+
+    assert item_1.name == 'Something'
+
+
+def test_edit_item_tags__no_tags_message(capsys, item_1):
+    main.edit_item_tags(item_1)
+    out, _ = capsys.readouterr()
+
+    assert 'no tags' in out
+
+
+@patch('main.inquirer.checkbox')
+def test_edit_item_tags__no_tags_to_select(mock, item_1):
+    main.edit_item_tags(item_1)
+
+    assert not mock.call_count
+
+
+@patch('main.inquirer.checkbox')
+def test_edit_item_tags__with_tags(mock, item_1, tag_1):
+    main.edit_item_tags(item_1)
+
+    assert mock.call_count
+
+
+@patch('main.inquirer.checkbox')
+def test_edit_item_tags__setting_tags(mock, item_1, tag_1):
+    mock.return_value.execute.return_value = [tag_1.id]
+
+    main.edit_item_tags(item_1)
+
+    assert item_1.tags == [tag_1]
