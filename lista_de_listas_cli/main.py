@@ -111,12 +111,19 @@ def start_interactive(default_choice: int = None):
             )
 
 
+def name_is_valid(value: str) -> bool:
+    return value.strip() != ''
+
+
 def questions_when_creating_or_editing_an_item(
     item: models.Item = None,
 ) -> schemas.ItemCreate:
     return schemas.ItemCreate(
         name=inquirer.text(
-            message='Enter the title:', default=item.name if item else ''
+            message='Enter the title:',
+            default=item.name if item else '',
+            validate=name_is_valid,
+            invalid_message='Name cannot be empty.',
         ).execute(),
         description=inquirer.text(
             message='Enter the description:',
@@ -290,7 +297,10 @@ def questions_when_creating_or_editing_a_tag(
 ) -> schemas.TagCreate:
     new_tag = schemas.TagCreate(
         name=inquirer.text(
-            message='Enter the tag title:', default=tag.name if tag else ''
+            message='Enter the tag title:',
+            default=tag.name if tag else '',
+            validate=name_is_valid,
+            invalid_message='Name cannot be empty.',
         ).execute()
     )
 

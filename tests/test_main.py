@@ -149,6 +149,18 @@ def test_init_tags_command__calls_init_tags(mock, runner):
     assert mock.call_count
 
 
+def test_name_is_valid__empty():
+    assert not main.name_is_valid('')
+
+
+def test_name_is_valid__only_a_space():
+    assert not main.name_is_valid(' ')
+
+
+def test_name_is_valid():
+    assert main.name_is_valid('Something')
+
+
 @patch('main.inquirer.text')
 def test_questions_when_creating_or_editing_an_item__return_class(text_mock):
     text_mock.return_value.execute.return_value = 'Something'
@@ -264,6 +276,45 @@ def test_create_item__item_tags_called(
     main.create_item()
 
     assert edit_item_tags_mock.call_count
+
+
+@patch('main.inquirer.select')
+@patch('main.inquirer.text')
+def test_questions_when_creating_or_editing_a_tag__return_class(
+    text_mock, select_mock
+):
+    text_mock.return_value.execute.return_value = 'Something'
+    select_mock.return_value.execute.return_value = None
+
+    result = main.questions_when_creating_or_editing_a_tag()
+
+    assert isinstance(result, schemas.TagCreate)
+
+
+@patch('main.inquirer.select')
+@patch('main.inquirer.text')
+def test_questions_when_creating_or_editing_a_tag__with_name(
+    text_mock, select_mock
+):
+    text_mock.return_value.execute.return_value = 'Something'
+    select_mock.return_value.execute.return_value = None
+
+    result = main.questions_when_creating_or_editing_a_tag()
+
+    assert result.name == 'Something'
+
+
+@patch('main.inquirer.select')
+@patch('main.inquirer.text')
+def test_questions_when_creating_or_editing_a_tag__with_parent(
+    text_mock, select_mock, tag_1
+):
+    text_mock.return_value.execute.return_value = 'Something'
+    select_mock.return_value.execute.return_value = tag_1.id
+
+    result = main.questions_when_creating_or_editing_a_tag()
+
+    assert result.parent_id == tag_1.id
 
 
 @patch('main.inquirer.confirm')
