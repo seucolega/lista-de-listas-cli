@@ -3,6 +3,7 @@ from unittest.mock import patch
 import facade
 import main
 import pytest
+import schemas
 
 
 @pytest.fixture(autouse=True)
@@ -148,6 +149,45 @@ def test_init_tags_command__calls_init_tags(mock, runner):
     assert mock.call_count
 
 
+def test_name_is_valid__empty():
+    assert not main.name_is_valid('')
+
+
+def test_name_is_valid__only_a_space():
+    assert not main.name_is_valid(' ')
+
+
+def test_name_is_valid():
+    assert main.name_is_valid('Something')
+
+
+@patch('main.inquirer.text')
+def test_questions_when_creating_or_editing_an_item__return_class(text_mock):
+    text_mock.return_value.execute.return_value = 'Something'
+
+    result = main.questions_when_creating_or_editing_an_item()
+
+    assert isinstance(result, schemas.ItemCreate)
+
+
+@patch('main.inquirer.text')
+def test_questions_when_creating_or_editing_an_item__with_name(text_mock):
+    text_mock.return_value.execute.return_value = 'Something'
+
+    result = main.questions_when_creating_or_editing_an_item()
+
+    assert result.name == 'Something'
+
+
+@patch('main.inquirer.text')
+def test_questions_when_creating_or_editing_an_item__with_description(mock):
+    mock.return_value.execute.side_effect = ['Item name', 'Item description']
+
+    result = main.questions_when_creating_or_editing_an_item()
+
+    assert result.description == 'Item description'
+
+
 @patch('main.inquirer.confirm')
 @patch('main.inquirer.text')
 def test_create_item__with_name_and_confirm_called(
@@ -193,6 +233,39 @@ def test_create_item__with_name_and_confirmed(
 @patch('main.edit_item_tags')
 @patch('main.inquirer.confirm')
 @patch('main.inquirer.text')
+def test_create_item__asserting_name(
+    text_mock, confirm_mock, edit_item_tags_mock, runner
+):
+    text_mock.return_value.execute.return_value = 'Something'
+    confirm_mock.return_value.execute.return_value = True
+    edit_item_tags_mock.return_value = None
+
+    item = main.create_item()
+
+    assert item.name == 'Something'
+
+
+@patch('main.edit_item_tags')
+@patch('main.inquirer.confirm')
+@patch('main.inquirer.text')
+def test_create_item__asserting_description(
+    text_mock, confirm_mock, edit_item_tags_mock, runner
+):
+    text_mock.return_value.execute.side_effect = [
+        'Item name',
+        'Item description',
+    ]
+    confirm_mock.return_value.execute.return_value = True
+    edit_item_tags_mock.return_value = None
+
+    item = main.create_item()
+
+    assert item.description == 'Item description'
+
+
+@patch('main.edit_item_tags')
+@patch('main.inquirer.confirm')
+@patch('main.inquirer.text')
 def test_create_item__item_tags_called(
     text_mock, confirm_mock, edit_item_tags_mock, runner
 ):
@@ -203,6 +276,45 @@ def test_create_item__item_tags_called(
     main.create_item()
 
     assert edit_item_tags_mock.call_count
+
+
+@patch('main.inquirer.select')
+@patch('main.inquirer.text')
+def test_questions_when_creating_or_editing_a_tag__return_class(
+    text_mock, select_mock
+):
+    text_mock.return_value.execute.return_value = 'Something'
+    select_mock.return_value.execute.return_value = None
+
+    result = main.questions_when_creating_or_editing_a_tag()
+
+    assert isinstance(result, schemas.TagCreate)
+
+
+@patch('main.inquirer.select')
+@patch('main.inquirer.text')
+def test_questions_when_creating_or_editing_a_tag__with_name(
+    text_mock, select_mock
+):
+    text_mock.return_value.execute.return_value = 'Something'
+    select_mock.return_value.execute.return_value = None
+
+    result = main.questions_when_creating_or_editing_a_tag()
+
+    assert result.name == 'Something'
+
+
+@patch('main.inquirer.select')
+@patch('main.inquirer.text')
+def test_questions_when_creating_or_editing_a_tag__with_parent(
+    text_mock, select_mock, tag_1
+):
+    text_mock.return_value.execute.return_value = 'Something'
+    select_mock.return_value.execute.return_value = tag_1.id
+
+    result = main.questions_when_creating_or_editing_a_tag()
+
+    assert result.parent_id == tag_1.id
 
 
 @patch('main.inquirer.confirm')
@@ -266,7 +378,7 @@ def test_edit_item__not_confirmed(text_mock, confirm_mock, item_1):
 
 @patch('main.inquirer.confirm')
 @patch('main.inquirer.text')
-def test_edit_item__confirmed(text_mock, confirm_mock, item_1):
+def test_edit_item__asserting_name(text_mock, confirm_mock, item_1):
     item_1.name = 'My item'
 
     text_mock.return_value.execute.return_value = 'Something'
@@ -275,6 +387,22 @@ def test_edit_item__confirmed(text_mock, confirm_mock, item_1):
     main.edit_item(item_1)
 
     assert item_1.name == 'Something'
+
+
+@patch('main.inquirer.confirm')
+@patch('main.inquirer.text')
+def test_edit_item__asserting_description(text_mock, confirm_mock, item_1):
+    item_1.name = 'My item'
+
+    text_mock.return_value.execute.side_effect = [
+        'Item name',
+        'Item description',
+    ]
+    confirm_mock.return_value.execute.return_value = True
+
+    main.edit_item(item_1)
+
+    assert item_1.description == 'Item description'
 
 
 def test_edit_item_tags__no_tags_message(capsys, item_1):

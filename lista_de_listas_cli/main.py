@@ -111,25 +111,48 @@ def start_interactive(default_choice: int = None):
             )
 
 
-@return_to
-def create_item(**_):
-    item = schemas.ItemCreate(
-        name=inquirer.text(message='Enter the item title:').execute()
+def name_is_valid(value: str) -> bool:
+    return value.strip() != ''
+
+
+def questions_when_creating_or_editing_an_item(
+    item: models.Item = None,
+) -> schemas.ItemCreate:
+    return schemas.ItemCreate(
+        name=inquirer.text(
+            message='Enter the title:',
+            default=item.name if item else '',
+            validate=name_is_valid,
+            invalid_message='Name cannot be empty.',
+        ).execute(),
+        description=inquirer.text(
+            message='Enter the description:',
+            multiline=True,
+            default=item.description if item else '',
+        ).execute(),
     )
+
+
+@return_to
+def create_item(**_) -> models.Item:
+    item = questions_when_creating_or_editing_an_item()
 
     if inquirer.confirm(message='Confirm?', default=True).execute():
         item = facade.create_item(item)
         edit_item_tags(item)
 
+        db_session.commit()
+
+        return item
+
 
 @return_to
 def edit_item(item: models.Item, **_):
-    item_name = inquirer.text(
-        message='Enter the item title:', default=item.name
-    ).execute()
+    new_data = questions_when_creating_or_editing_an_item(item)
 
     if inquirer.confirm(message='Confirm?', default=True).execute():
-        item.name = item_name
+        for (key, value) in new_data.dict().items():
+            setattr(item, key, value)
 
         db_session.commit()
 
@@ -269,19 +292,38 @@ def show_tags(default_choice: int = None, **_):
                 show_tag_options(tag)
 
 
-@return_to
-def create_tag(**_):
-    tag = schemas.TagCreate(
-        name=inquirer.text(message='Enter the tag title:').execute()
+def questions_when_creating_or_editing_a_tag(
+    tag: models.Tag = None,
+) -> schemas.TagCreate:
+    new_tag = schemas.TagCreate(
+        name=inquirer.text(
+            message='Enter the tag title:',
+            default=tag.name if tag else '',
+            validate=name_is_valid,
+            invalid_message='Name cannot be empty.',
+        ).execute()
     )
 
-    parent_id = ask_for_parent_tag_when_editing_a_tag(tag.parent_id)
+    parent_id = ask_for_parent_tag_when_editing_a_tag(
+        tag.parent_id if tag else None
+    )
 
     if parent_id:
-        tag.parent_id = parent_id
+        new_tag.parent_id = parent_id
+
+    return new_tag
+
+
+@return_to
+def create_tag(**_) -> models.Tag:
+    tag = questions_when_creating_or_editing_a_tag()
 
     if inquirer.confirm(message='Confirm?', default=True).execute():
-        facade.create_tag(tag)
+        tag = facade.create_tag(tag)
+
+        db_session.commit()
+
+        return tag
 
 
 @return_to
@@ -304,19 +346,13 @@ def show_tag_options(tag: models.Tag, **_):
 
 @return_to
 def edit_tag(tag: models.Tag, **_):
-    tag.name = inquirer.text(
-        message='Enter the tag title:', default=tag.name
-    ).execute()
-
-    parent_id = ask_for_parent_tag_when_editing_a_tag(tag.parent_id)
-
-    if parent_id:
-        tag.parent_id = parent_id
+    new_data = questions_when_creating_or_editing_a_tag(tag)
 
     if inquirer.confirm(message='Confirm?', default=True).execute():
+        for (key, value) in new_data.dict().items():
+            setattr(tag, key, value)
+
         db_session.commit()
-    else:
-        db_session.rollback()
 
 
 def ask_for_parent_tag_when_editing_a_tag(default_choice: int = None):
