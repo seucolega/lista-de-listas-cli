@@ -14,6 +14,7 @@ class ItemStatus(Enum):
 
 class ItemBase(BaseModel):
     name: str
+    description: Optional[str]
     status: ItemStatus = ItemStatus.UNDONE
     tags: list = []
 
