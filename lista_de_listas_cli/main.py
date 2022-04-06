@@ -118,19 +118,25 @@ def name_is_valid(value: str) -> bool:
 def questions_when_creating_or_editing_an_item(
     item: models.Item = None,
 ) -> schemas.ItemCreate:
-    return schemas.ItemCreate(
-        name=inquirer.text(
-            message='Enter the title:',
-            default=item.name if item else '',
-            validate=name_is_valid,
-            invalid_message='Name cannot be empty.',
-        ).execute(),
-        description=inquirer.text(
+    new_data = item.__dict__.copy() if item else {}
+
+    new_data['name'] = inquirer.text(
+        message='Enter the title:',
+        default=item.name if item else '',
+        validate=name_is_valid,
+        invalid_message='Name cannot be empty.',
+    ).execute()
+
+    new_data['description'] = (
+        inquirer.text(
             message='Enter the description:',
             multiline=True,
-            default=item.description if item else '',
-        ).execute(),
+            default=(item.description if item else None) or '',
+        ).execute()
+        or None
     )
+
+    return schemas.ItemCreate(**new_data)
 
 
 @return_to
@@ -295,23 +301,23 @@ def show_tags(default_choice: int = None, **_):
 def questions_when_creating_or_editing_a_tag(
     tag: models.Tag = None,
 ) -> schemas.TagCreate:
-    new_tag = schemas.TagCreate(
-        name=inquirer.text(
-            message='Enter the tag title:',
-            default=tag.name if tag else '',
-            validate=name_is_valid,
-            invalid_message='Name cannot be empty.',
-        ).execute()
-    )
+    new_data = tag.__dict__.copy() if tag else {}
+
+    new_data['name'] = inquirer.text(
+        message='Enter the tag title:',
+        default=tag.name if tag else '',
+        validate=name_is_valid,
+        invalid_message='Name cannot be empty.',
+    ).execute()
 
     parent_id = ask_for_parent_tag_when_editing_a_tag(
         tag.parent_id if tag else None
     )
 
     if parent_id:
-        new_tag.parent_id = parent_id
+        new_data['parent_id'] = parent_id
 
-    return new_tag
+    return schemas.TagCreate(**new_data)
 
 
 @return_to

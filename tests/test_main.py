@@ -392,8 +392,6 @@ def test_edit_item__asserting_name(text_mock, confirm_mock, item_1):
 @patch('main.inquirer.confirm')
 @patch('main.inquirer.text')
 def test_edit_item__asserting_description(text_mock, confirm_mock, item_1):
-    item_1.name = 'My item'
-
     text_mock.return_value.execute.side_effect = [
         'Item name',
         'Item description',
@@ -403,6 +401,21 @@ def test_edit_item__asserting_description(text_mock, confirm_mock, item_1):
     main.edit_item(item_1)
 
     assert item_1.description == 'Item description'
+
+
+@patch('main.inquirer.confirm')
+@patch('main.inquirer.text')
+def test_edit_item__without_changing_tags(
+    text_mock, confirm_mock, item_1, tag_1
+):
+    item_1.tags = [tag_1]
+
+    text_mock.return_value.execute.return_value = 'Something'
+    confirm_mock.return_value.execute.return_value = True
+
+    main.edit_item(item_1)
+
+    assert item_1.tags == [tag_1]
 
 
 def test_edit_item_tags__no_tags_message(capsys, item_1):
