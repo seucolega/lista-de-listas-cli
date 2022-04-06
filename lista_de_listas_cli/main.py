@@ -152,7 +152,8 @@ def edit_item(item: models.Item, **_):
 
     if inquirer.confirm(message='Confirm?', default=True).execute():
         for (key, value) in new_data.dict().items():
-            setattr(item, key, value)
+            if key != 'tags':
+                setattr(item, key, value)
 
         db_session.commit()
 
