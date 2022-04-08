@@ -257,7 +257,14 @@ def show_items(
             item_id = select_items[0]
             item = facade.get_item(item_id)
             if item:
-                show_item_options(item)
+                show_item_options(
+                    item=item,
+                    return_func=show_items,
+                    return_args={
+                        'item_list': item_list,
+                        'default_choice': item_id,
+                    },
+                )
         else:
             ...
 
