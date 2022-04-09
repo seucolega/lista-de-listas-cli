@@ -163,6 +163,21 @@ def edit_item(item: models.Item, **_):
         db_session.commit()
 
 
+def validate_selected_item_tags(tag_id_list: [int]) -> bool:
+    parent_list = []
+
+    for tag_id in tag_id_list:
+        tag = facade.get_tag(tag_id)
+
+        if tag.parent_id:
+            if tag.parent_id in parent_list:
+                return False
+
+            parent_list.append(tag.parent_id)
+
+    return True
+
+
 @return_to
 def edit_item_tags(item: models.Item, **_):
     tag_list = facade.get_actionable_tag_list()
@@ -181,7 +196,9 @@ def edit_item_tags(item: models.Item, **_):
     action = inquirer.checkbox(
         message='Select one or more tags:',
         choices=choices,
-        transformer=lambda result: get_selected_items_info(result),
+        validate=validate_selected_item_tags,
+        invalid_message='Select only one tag per group',
+        transformer=get_selected_items_info,
     ).execute()
 
     tags = []
@@ -249,7 +266,7 @@ def show_items(
         choices=choices,
         default=default_choice or choices[0].value,
         multiselect=True,
-        transformer=lambda result: get_selected_items_info(result),
+        transformer=get_selected_items_info,
     ).execute()
 
     if select_items:
