@@ -33,7 +33,7 @@ def test_add_command(runner):
 
 
 def test_show_items__no_items_message(capsys):
-    main.show_items(item_list=[])
+    main.show_items(lambda: [])
     out, _ = capsys.readouterr()
 
     assert 'no items' in out
@@ -41,14 +41,14 @@ def test_show_items__no_items_message(capsys):
 
 @patch('main.inquirer.select')
 def test_show_items__no_items_to_select(mock):
-    main.show_items(item_list=[])
+    main.show_items(lambda: [])
 
     assert not mock.call_count
 
 
 @patch('main.inquirer.select')
 def test_show_items__with_items(mock, item_1):
-    main.show_items(item_list=[item_1])
+    main.show_items(lambda: [item_1])
 
     assert mock.call_count
 

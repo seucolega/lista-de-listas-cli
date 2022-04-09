@@ -1,5 +1,5 @@
 import time
-from typing import List
+from typing import Callable, List, Union
 
 import click
 import facade
@@ -24,7 +24,7 @@ def cli():
 
 @cli.command(name='list')
 def list_command():
-    show_items(item_list=facade.get_actionable_items())
+    show_items(facade.get_actionable_items)
 
 
 @cli.command(name='add')
@@ -92,20 +92,16 @@ def start_interactive(default_choice: int = None):
         if action == 'create':
             create_item(**return_to_kwargs)
         elif action == 'inbox':
-            show_items(item_list=facade.get_inbox_items(), **return_to_kwargs)
+            show_items(facade.get_inbox_items, **return_to_kwargs)
         elif action == 'actionable':
-            show_items(
-                item_list=facade.get_actionable_items(), **return_to_kwargs
-            )
+            show_items(facade.get_actionable_items, **return_to_kwargs)
         elif action == 'tags':
             show_tags(**return_to_kwargs)
         elif action.startswith('tag.'):
             tag_id = int(action[4:])
 
-            item_list = facade.get_actionable_items_with_the_tag(tag_id)
-
             show_items(
-                item_list=item_list,
+                facade.get_actionable_items_with_the_tag,
                 context=facade.get_tag(tag_id),
                 **return_to_kwargs,
             )
@@ -140,7 +136,7 @@ def questions_when_creating_or_editing_an_item(
 
 
 @return_to
-def create_item(**_) -> models.Item:
+def create_item(**_) -> Union[models.Item, None]:
     item = questions_when_creating_or_editing_an_item()
 
     if inquirer.confirm(message='Confirm?', default=True).execute():
@@ -150,6 +146,8 @@ def create_item(**_) -> models.Item:
         db_session.commit()
 
         return item
+
+    return None
 
 
 @return_to
@@ -242,11 +240,14 @@ def show_item_options(item: models.Item, **_):
 
 @return_to
 def show_items(
-    item_list: [models.Item],
+    function_to_get_items: Callable,
     context: models.Tag = None,
     default_choice: int = None,
     **_,
 ):
+    arguments = [context] if context else []
+    item_list = function_to_get_items(*arguments)
+
     if not item_list:
         # TODO: Create a function to show the message and wait a second
         click.echo('There are no items to display.')
@@ -278,7 +279,7 @@ def show_items(
                     item=item,
                     return_func=show_items,
                     return_args={
-                        'item_list': item_list,
+                        'function_to_get_items': function_to_get_items,
                         'default_choice': item_id,
                     },
                 )
@@ -345,7 +346,7 @@ def questions_when_creating_or_editing_a_tag(
 
 
 @return_to
-def create_tag(**_) -> models.Tag:
+def create_tag(**_) -> Union[models.Tag, None]:
     tag = questions_when_creating_or_editing_a_tag()
 
     if inquirer.confirm(message='Confirm?', default=True).execute():
@@ -354,6 +355,8 @@ def create_tag(**_) -> models.Tag:
         db_session.commit()
 
         return tag
+
+    return None
 
 
 @return_to

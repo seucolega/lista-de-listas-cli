@@ -2,7 +2,7 @@ from typing import Any, Union
 
 from database import Base, engine
 from schemas import ItemStatus
-from sqlalchemy import BigInteger, Column, Enum, ForeignKey, String, Table
+from sqlalchemy import BigInteger, Column, Enum, ForeignKey, String
 from sqlalchemy.orm import relationship, validates
 
 Base.metadata.create_all(bind=engine)

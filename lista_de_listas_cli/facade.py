@@ -30,12 +30,12 @@ def get_inbox_items(skip: int = 0, limit: int = 100) -> [models.Item]:
 
 
 def get_actionable_items_with_the_tag(
-    tag_id: int, skip: int = 0, limit: int = 100
+    tag: models.Tag, skip: int = 0, limit: int = 100
 ) -> [models.Item]:
     return (
         db_session.query(models.Item)
         .filter_by(status=schemas.ItemStatus.UNDONE)
-        .filter(models.Item.tags.any(id=tag_id))
+        .filter(models.Item.tags.any(id=tag.id))
         .offset(skip)
         .limit(limit)
         .all()
