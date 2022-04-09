@@ -31,7 +31,7 @@ def test_get_actionable_items__with_done_and_undone_items(
 
 
 def test_get_actionable_items_with_the_tag__empty(tag_1):
-    assert facade.get_actionable_items_with_the_tag(tag_1.id) == []
+    assert facade.get_actionable_items_with_the_tag(tag_1) == []
 
 
 def test_get_inbox_items__empty():
@@ -57,13 +57,13 @@ def test_get_inbox_items__with_a_undone_and_tagged_item(undone_item_1, tag_1):
 def test_get_actionable_items_with_the_tag__with_a_done_item(
     tag_1, done_item_1
 ):
-    assert facade.get_actionable_items_with_the_tag(tag_1.id) == []
+    assert facade.get_actionable_items_with_the_tag(tag_1) == []
 
 
 def test_get_actionable_items_with_the_tag__with_items_without_the_tag(
     tag_1, done_item_1, undone_item_1
 ):
-    assert facade.get_actionable_items_with_the_tag(tag_1.id) == []
+    assert facade.get_actionable_items_with_the_tag(tag_1) == []
 
 
 def test_get_actionable_items_with_the_tag__with_items_and_the_tag(
@@ -71,9 +71,7 @@ def test_get_actionable_items_with_the_tag__with_items_and_the_tag(
 ):
     tag_1.items = [done_item_1, undone_item_1]
 
-    assert facade.get_actionable_items_with_the_tag(tag_1.id) == [
-        undone_item_1
-    ]
+    assert facade.get_actionable_items_with_the_tag(tag_1) == [undone_item_1]
 
 
 def test_get_item(item_1):

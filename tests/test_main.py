@@ -33,7 +33,7 @@ def test_add_command(runner):
 
 
 def test_show_items__no_items_message(capsys):
-    main.show_items(item_list=[])
+    main.show_items(lambda: [])
     out, _ = capsys.readouterr()
 
     assert 'no items' in out
@@ -41,14 +41,14 @@ def test_show_items__no_items_message(capsys):
 
 @patch('main.inquirer.select')
 def test_show_items__no_items_to_select(mock):
-    main.show_items(item_list=[])
+    main.show_items(lambda: [])
 
     assert not mock.call_count
 
 
 @patch('main.inquirer.select')
 def test_show_items__with_items(mock, item_1):
-    main.show_items(item_list=[item_1])
+    main.show_items(lambda: [item_1])
 
     assert mock.call_count
 
@@ -446,3 +446,25 @@ def test_edit_item_tags__setting_tags(mock, item_1, tag_1):
     main.edit_item_tags(item_1)
 
     assert item_1.tags == [tag_1]
+
+
+def test_validate_selected_item_tags__with_independent_tags(
+    tag_1, child_tag_1_of_parent_tag_1
+):
+    tag_id_list = [
+        tag_1.id,
+        child_tag_1_of_parent_tag_1.id,
+    ]
+
+    assert main.validate_selected_item_tags(tag_id_list)
+
+
+def test_validate_selected_item_tags__with_two_tags_from_the_same_group(
+    child_tag_1_of_parent_tag_1, child_tag_2_of_parent_tag_1
+):
+    tag_id_list = [
+        child_tag_1_of_parent_tag_1.id,
+        child_tag_2_of_parent_tag_1.id,
+    ]
+
+    assert not main.validate_selected_item_tags(tag_id_list)
