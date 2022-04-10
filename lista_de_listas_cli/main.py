@@ -7,7 +7,7 @@ import models
 import schemas
 from database import Base, db_session, engine
 from InquirerPy import inquirer
-from InquirerPy.base.control import Choice
+from InquirerPy.base.control import Choice, Separator
 from utils import clear_screen, get_selected_items_info, init_tags, return_to
 
 
@@ -176,20 +176,62 @@ def validate_selected_item_tags(tag_id_list: [int]) -> bool:
     return True
 
 
+def get_grouped_tag_list_as_choices(
+    group_name: str, tag_list: [models.Tag], tag_ids_to_select: [int]
+) -> [Union[Separator, Choice]]:
+    if tag_list:
+        return [
+            Separator(group_name),
+            *get_tag_list_as_choices(
+                tag_list=tag_list, tag_ids_to_select=tag_ids_to_select
+            ),
+        ]
+
+    return []
+
+
+def get_tag_list_as_choices(
+    tag_list: [models.Tag], tag_ids_to_select: [int]
+) -> [Choice]:
+    result = []
+
+    for tag in tag_list:
+        choice_enabled = tag.id in tag_ids_to_select
+        result.append(Choice(tag.id, name=tag.name, enabled=choice_enabled))
+
+    return result
+
+
 @return_to
 def edit_item_tags(item: models.Item, **_):
-    tag_list = facade.get_actionable_tag_list()
+    parent_list = facade.get_tag_list_without_parent()
 
-    if not tag_list:
+    if not parent_list:
         click.echo('There are no tags to display.')
         return
 
     item_tag_id_list = [tag.id for tag in item.tags]
     choices = []
+    tags_with_children = [tag for tag in parent_list if tag.children]
+    independent_tags = [tag for tag in parent_list if not tag.children]
 
-    for tag in tag_list:
-        choice_enabled = tag.id in item_tag_id_list
-        choices.append(Choice(tag.id, name=tag.name, enabled=choice_enabled))
+    for tag_list in tags_with_children:
+        choices.extend(
+            get_grouped_tag_list_as_choices(
+                group_name=tag_list.name,
+                tag_list=tag_list.children,
+                tag_ids_to_select=item_tag_id_list,
+            )
+        )
+
+    if independent_tags:
+        choices.extend(
+            get_grouped_tag_list_as_choices(
+                group_name='Independent',
+                tag_list=independent_tags,
+                tag_ids_to_select=item_tag_id_list,
+            )
+        )
 
     action = inquirer.checkbox(
         message='Select one or more tags:',

@@ -1,9 +1,10 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import facade
 import main
 import pytest
 import schemas
+from InquirerPy.base.control import Choice, Separator
 
 
 @pytest.fixture(autouse=True)
@@ -51,6 +52,24 @@ def test_show_items__with_items(mock, item_1):
     main.show_items(lambda: [item_1])
 
     assert mock.call_count
+
+
+def test_show_items__function_is_called():
+    function_to_get_items = Mock()
+    function_to_get_items.return_value = []
+
+    main.show_items(function_to_get_items)
+
+    assert function_to_get_items.call_count
+
+
+def test_show_items__function_called_with_context(item_1, tag_1):
+    function_to_get_items = Mock()
+    function_to_get_items.return_value = []
+
+    main.show_items(function_to_get_items, context=tag_1)
+
+    assert function_to_get_items.call_args.args == (tag_1,)
 
 
 @patch('main.start_interactive')
@@ -418,6 +437,78 @@ def test_edit_item__without_changing_tags(
     assert item_1.tags == [tag_1]
 
 
+def test_get_grouped_tag_list_as_choices__without_tags():
+    result = main.get_grouped_tag_list_as_choices(
+        group_name='Tag group', tag_list=[], tag_ids_to_select=[]
+    )
+
+    assert result == []
+
+
+def test_get_grouped_tag_list_as_choices__first_item_is_a_separator(item_1):
+    result = main.get_grouped_tag_list_as_choices(
+        group_name='Tag group', tag_list=[item_1], tag_ids_to_select=[]
+    )
+
+    assert isinstance(result[0], Separator)
+
+
+def test_get_grouped_tag_list_as_choices__separator_as_group_name(item_1):
+    result = main.get_grouped_tag_list_as_choices(
+        group_name='Tag group', tag_list=[item_1], tag_ids_to_select=[]
+    )
+
+    assert str(result[0]) == 'Tag group'
+
+
+def test_get_grouped_tag_list_as_choices__second_item_is_a_choice(tag_1):
+    result = main.get_grouped_tag_list_as_choices(
+        group_name='Tag group', tag_list=[tag_1], tag_ids_to_select=[]
+    )
+
+    assert isinstance(result[1], Choice)
+
+
+def test_get_tag_list_as_choices__choice_with_tag_name(tag_1):
+    result = main.get_tag_list_as_choices(
+        tag_list=[tag_1], tag_ids_to_select=[]
+    )
+
+    assert str(result[0].name) == str(tag_1)
+
+
+def test_get_tag_list_as_choices__no_tag_selected(tag_1, tag_2):
+    result = main.get_tag_list_as_choices(
+        tag_list=[tag_1, tag_2], tag_ids_to_select=[]
+    )
+
+    assert not result[0].enabled and not result[1].enabled
+
+
+def test_get_tag_list_as_choices__first_tag_selected(tag_1, tag_2):
+    result = main.get_tag_list_as_choices(
+        tag_list=[tag_1, tag_2], tag_ids_to_select=[tag_1.id]
+    )
+
+    assert result[0].enabled and not result[1].enabled
+
+
+def test_get_tag_list_as_choices__second_tag_selected(tag_1, tag_2):
+    result = main.get_tag_list_as_choices(
+        tag_list=[tag_1, tag_2], tag_ids_to_select=[tag_2.id]
+    )
+
+    assert not result[0].enabled and result[1].enabled
+
+
+def test_get_tag_list_as_choices__all_tags_selected(tag_1, tag_2):
+    result = main.get_tag_list_as_choices(
+        tag_list=[tag_1, tag_2], tag_ids_to_select=[tag_1.id, tag_2.id]
+    )
+
+    assert result[0].enabled and result[1].enabled
+
+
 def test_edit_item_tags__no_tags_message(capsys, item_1):
     main.edit_item_tags(item_1)
     out, _ = capsys.readouterr()
@@ -437,6 +528,32 @@ def test_edit_item_tags__with_tags(mock, item_1, tag_1):
     main.edit_item_tags(item_1)
 
     assert mock.call_count
+
+
+@patch('main.inquirer.checkbox')
+@patch('main.get_grouped_tag_list_as_choices')
+def test_edit_item_tags__grouping_child_tag(
+    mock_1, checkbox_mock, item_1, child_tag_1_of_parent_tag_1
+):
+    mock_1.return_value = []
+    checkbox_mock.return_value.execute.return_value = []
+
+    main.edit_item_tags(item_1)
+
+    assert mock_1.call_count
+
+
+@patch('main.inquirer.checkbox')
+@patch('main.get_grouped_tag_list_as_choices')
+def test_edit_item_tags__grouping_independent_tag(
+    mock_1, checkbox_mock, item_1, tag_1
+):
+    mock_1.return_value = []
+    checkbox_mock.return_value.execute.return_value = []
+
+    main.edit_item_tags(item_1)
+
+    assert mock_1.call_args.kwargs['group_name'] == 'Independent'
 
 
 @patch('main.inquirer.checkbox')
