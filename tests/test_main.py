@@ -13,13 +13,6 @@ def configure_db_session(db_session):
     facade.db_session = db_session
 
 
-# def test_hello_world(runner):
-#     result = runner.invoke(main.hello_command, ['people'])
-#
-#     assert result.exit_code == 0
-#     assert result.output == 'Hello people!\n'
-
-
 @patch('main.show_items')
 def test_list_command__exists(mock, runner):
     runner.invoke(main.list_command)
@@ -110,7 +103,11 @@ def test_choices_for_interactive_menu__has_no_inbox_choice():
 def test_choices_for_interactive_menu__has_inbox_choice(item_1):
     choices = main.choices_for_interactive_menu()
 
-    assert [choice for choice in choices if 'Inbox' in choice.name]
+    assert [
+        choice
+        for choice in choices
+        if isinstance(choice, Choice) and 'Inbox' in choice.name
+    ]
 
 
 def test_choices_for_interactive_menu__has_exit_choice():
@@ -130,7 +127,11 @@ def test_choices_for_interactive_menu__has_context_choice(item_1, tag_1):
 
     choices = main.choices_for_interactive_menu()
 
-    assert [choice for choice in choices if 'Context' in choice.name]
+    assert [
+        choice
+        for choice in choices
+        if isinstance(choice, Choice) and 'Context' in choice.name
+    ]
 
 
 def test_choices_for_interactive_menu__has_the_tag_name_choice(item_1, tag_1):
@@ -139,7 +140,11 @@ def test_choices_for_interactive_menu__has_the_tag_name_choice(item_1, tag_1):
 
     choices = main.choices_for_interactive_menu()
 
-    assert [choice for choice in choices if tag_1.name in choice.name]
+    assert [
+        choice
+        for choice in choices
+        if isinstance(choice, Choice) and tag_1.name in choice.name
+    ]
 
 
 def test_choices_for_interactive_menu__has_no_empty_context_tag(item_1, tag_1):
@@ -147,7 +152,11 @@ def test_choices_for_interactive_menu__has_no_empty_context_tag(item_1, tag_1):
 
     choices = main.choices_for_interactive_menu()
 
-    assert not [choice for choice in choices if tag_1.name in choice.name]
+    assert not [
+        choice
+        for choice in choices
+        if isinstance(choice, Choice) and tag_1.name in choice.name
+    ]
 
 
 def test_choices_for_interactive_menu__has_no_empty_context_tag_2(

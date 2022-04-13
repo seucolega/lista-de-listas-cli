@@ -10,16 +10,12 @@ from InquirerPy import inquirer
 from InquirerPy.base.control import Choice, Separator
 from utils import clear_screen, get_selected_items_info, init_tags, return_to
 
+PREFIX_IN_CHOICE = '  '
+
 
 @click.group()
 def cli():
     pass
-
-
-# @click.command(name='hello')
-# @click.argument('name')
-# def hello_command(name):
-#     click.echo(f'Hello {name}!')
 
 
 @cli.command(name='list')
@@ -51,25 +47,38 @@ def init_tags_command():
 #         engine.execute(tbl.delete())
 
 
-def choices_for_interactive_menu() -> List[Choice]:
-    choices = [Choice('create', name='New item')]
+def get_view_of_items_as_choices() -> List[Choice]:
+    choices = []
 
     if facade.get_inbox_items(limit=1):
-        choices.append(Choice('inbox', name='Inbox'))
+        choices.append(Choice('inbox', name=f'{PREFIX_IN_CHOICE}Inbox'))
 
     tag_list = facade.get_list_of_tags_with_actionable_items()
     for tag in tag_list:
-        choices.append(Choice(f'tag.{tag.id}', name=f'Context {tag.name}'))
+        choices.append(
+            Choice(
+                f'tag.{tag.id}',
+                name=f'{PREFIX_IN_CHOICE}Context {tag.name}',
+            )
+        )
 
-    choices += [
-        # Choice('all', name='All items'),
-        Choice('actionable', name='Actionable items'),
-        # Choice('non_actionable', name='Non-actionable items'),
+    if choices or facade.get_actionable_items(limit=1):
+        choices.append(
+            Choice('actionable', name=f'{PREFIX_IN_CHOICE}Actionable items')
+        )
+
+        choices.insert(0, Separator('Views'))
+
+    return choices
+
+
+def choices_for_interactive_menu() -> List[Choice]:
+    return [
+        Choice('create', name='New item'),
+        *get_view_of_items_as_choices(),
         Choice('tags', name='Manage tags'),
         Choice(value=None, name='Exit'),
     ]
-
-    return choices
 
 
 def start_interactive(default_choice: int = None):
@@ -307,7 +316,7 @@ def show_items(
     select_items = inquirer.select(
         message='Select one or more items:',
         choices=choices,
-        default=default_choice or choices[0].value,
+        default=default_choice,
         multiselect=True,
         transformer=get_selected_items_info,
     ).execute()
@@ -331,17 +340,20 @@ def show_items(
 
 @return_to
 def show_tags(default_choice: int = None, **_):
-    tag_list = facade.get_tag_list()
-
-    if not tag_list:
-        click.echo('There are no items to display.')
-        time.sleep(1)
-        return
-
     choices = [Choice('create', name='New tag')]
 
+    tag_list = facade.get_tag_list()
+
+    if tag_list:
+        choices.append(Separator('Tags'))
+
     for tag in tag_list:
-        choices.append(Choice(tag.id, name=facade.get_tag_text_to_show(tag)))
+        choices.append(
+            Choice(
+                tag.id,
+                name=PREFIX_IN_CHOICE + facade.get_tag_text_to_show(tag),
+            )
+        )
 
     choices.append(Choice(value=None, name='Return'))
 
