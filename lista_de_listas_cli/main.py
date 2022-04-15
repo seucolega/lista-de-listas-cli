@@ -331,6 +331,7 @@ def show_items(
                     return_func=show_items,
                     return_args={
                         'function_to_get_items': function_to_get_items,
+                        'context': context,
                         'default_choice': item_id,
                     },
                 )
