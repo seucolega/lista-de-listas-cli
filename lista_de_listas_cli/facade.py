@@ -55,8 +55,10 @@ def get_item(item_id: int) -> models.Item:
 
 
 def create_item(item: schemas.ItemCreate) -> models.Item:
+    item_id = db_session.query(func.max(models.Item.id)).scalar() + 1
+
     item = models.Item(
-        id=len(get_item_list()) + 1,
+        id=item_id,
         **item.dict(),
     )
 
@@ -138,8 +140,10 @@ def get_tag_by_name(tag_name: str) -> models.Tag:
 
 
 def create_tag(tag: schemas.TagCreate) -> models.Tag:
+    tag_id = db_session.query(func.max(models.Tag.id)).scalar() + 1
+
     tag = models.Tag(
-        id=len(get_tag_list()) + 1,
+        id=tag_id,
         **tag.dict(),
     )
 
